@@ -9,13 +9,15 @@ class DatabaseTable(object):
 		self.name = name
 
 	def select(self, column, condition):
-		return self.connect.execute("SELECT " + column + " FROM " + self.name + " " + condition)
+		return self.connect.execute("SELECT " + column + 
+				" FROM " + self.name + " " + condition)
 
 	def select_by_id(self, t_id, column):
 		return self.select(column, "WHERE id=" + t_id.__str__())
 
 	def update(self, column_val, condition):
-		return self.connect.execute("UPDATE " + self.name + " SET " + column_val + " " + condition)
+		return self.connect.execute("UPDATE " + self.name + 
+				" SET " + column_val + " " + condition)
 
 	def update_by_id(self, t_id, column_val):
 		return self.update(column_val, "WHERE id=" + t_id.__str__())
@@ -91,7 +93,8 @@ class NoteVsTagTable(DatabaseTable):
 			)""")
 
 	def insert(self, n_id, t_id):
-		self.connect.execute("INSERT INTO " + self.name + " VALUES(null, " + n_id.__str__() + ", " + t_id.__str__() + ")")
+		self.connect.execute("INSERT INTO " + self.name + 
+				" VALUES(null, " + n_id.__str__() + ", " + t_id.__str__() + ")")
 	
 class Database(object):
 	tables = {
@@ -136,12 +139,16 @@ class Database(object):
 		n_id = note.get_id()
 		t_id = tag.get_id()
 		if not n_id or not t_id:
-			raise errors.NullError("n_id:" + n_id.__str__() + " t_id:" + t_id.__str__() + " Can not be Null")
+			raise errors.NullError("n_id:" + n_id.__str__() + 
+					" t_id:" + t_id.__str__() + " Can not be Null")
 
-		cu = n_v_t_table.select("id", "WHERE n_id=" + n_id.__str__() + " AND t_id=" + t_id.__str__())
+		cu = n_v_t_table.select("id", "WHERE n_id=" + n_id.__str__() + 
+				" AND t_id=" + t_id.__str__())
 		try:
 			record = cu.next()
-			debug.message(debug.WARN, "note: ", note.get_name()," for tag: ", tag.get_name(), " already exists, ignoring")
+			debug.message(debug.WARN, "note: ", note.get_name(),
+					" for tag: ", tag.get_name(), 
+					" already exists, ignoring")
 		except StopIteration:
 			n_v_t_table.insert(n_id, t_id)
 			
@@ -151,7 +158,8 @@ class Database(object):
 		cu = nb_table.select("id", "WHERE name='"+notebook.get_name()+"'")
 		try:
 			record = cu.next()
-			debug.message(debug.WARN, "notebook: ", notebook.get_name(), " already exists, ignoring")
+			debug.message(debug.WARN, "notebook: ", notebook.get_name(), 
+					" already exists, ignoring")
 		except StopIteration:
 			self.get_table("notebook").insert(notebook.get_name())
 

@@ -20,7 +20,8 @@ class Command(Cmd):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
-		opts, args = getopt.getopt(argv[1:], "n:t:d", ["notebook=", "tag=", "detail"])
+		opts, args = getopt.getopt(argv[1:], "n:t:d", 
+				["notebook=", "tag=", "detail"])
 		for op, value in opts:
 			if op in ("-n", "--notebook"):
 				self.arg_notebook = value
@@ -41,7 +42,8 @@ class Command(Cmd):
 		# find notespace
 		self.notespace = Notespace()
 		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe you should run init first")
+			raise errors.NotFoundError("Can't find notespace maybe\
+					you should run init first")
 
 		notebook = None
 		if self.arg_notebook:
@@ -95,7 +97,8 @@ class Command(Cmd):
 
 		if self.arg_detail:
 			for detail in notes_detail:
-				sys.stdout.write(detail["path"].__str__() + "|" + detail["notebook"].__str__() + "|")
+				sys.stdout.write(detail["path"].__str__() + "|" + 
+						detail["notebook"].__str__() + "|")
 				for tag in detail["tag"]:
 					if tag:
 						sys.stdout.write(tag.__str__()+";")

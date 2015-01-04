@@ -35,14 +35,17 @@ class Command(Cmd):
 		# find notespace
 		self.notespace = Notespace()
 		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe you should run init first")
+			raise errors.NotFoundError("Can't find notespace maybe \
+					you should run init first")
 
 		# add note to notebook
 		if self.arg_notebook:
 			note = self.add_notes_to_notebook(self.arg_notes, self.arg_notebook)
 		else:
-			debug.message(debug.DEBUG, "No notebook specified, using default notebook")
-			note = self.add_notes_to_notebook(self.arg_notes, self.notespace.get_default_notebook())
+			debug.message(debug.DEBUG, 
+					"No notebook specified, using default notebook")
+			note = self.add_notes_to_notebook(self.arg_notes, 
+					self.notespace.get_default_notebook())
 
 		# add tags
 		if self.arg_tags:
@@ -57,7 +60,8 @@ class Command(Cmd):
 			nb_name = notebook
 			notebook = self.notespace.find_notebook(nb_name)
 			if not notebook:
-				debug.message(debug.DEBUG, "Automatically creating notebook ", nb_name)
+				debug.message(debug.DEBUG, 
+						"Automatically creating notebook ", nb_name)
 				notebook = self.notespace.create_notebook(nb_name)
 			for note_path in notes_path:
 				notes.append(notebook.add_note(note_path, False))
