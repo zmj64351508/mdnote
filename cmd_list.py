@@ -141,12 +141,40 @@ class NotebookTarget(CommandGeneral):
 	def usage(self):
 		print "usage: mdnote list notebook"
 
+class TagTarget(CommandGeneral):
+	def __init__(self):
+		super(TagTarget, self).__init__()
+		self.arg_detail = False
+
+	def main(self, argc, argv):
+		if argc < 1:
+			self.usage()
+			raise errors.UsageError()
+		opts, args = getopt.getopt(argv[1:], "d", 
+				["detail"])
+		for op, value in opts:
+			if op in ("-d", "--detail"):
+				self.arg_detail = True
+
+		# find notespace
+		self.notespace = Notespace()
+		if not self.notespace.find_notespace("."):
+			raise errors.NotFoundError("Can't find notespace maybe\
+					you should run init first")
+
+		tags = self.notespace.get_all_tags()
+		for tag in tags:
+			print tag
+	
+	def usage(self):
+		print "usage: mdnote list notebook"
+
 class Main(CommandWithTarget):
 	def __init__(self):
 		target_factory = TargetFactory({
 			"note":NoteTarget,
 			"notebook":NotebookTarget,
-			#"tag":TagTarget,
+			"tag":TagTarget,
 			#"target":TargetTarget,
 		})
 		super(Main, self).__init__(target_factory)

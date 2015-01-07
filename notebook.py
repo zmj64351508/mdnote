@@ -293,6 +293,14 @@ class Database(object):
 			name.append(row[1])
 		return name
 
+	def get_all_tags(self):
+		db_table = self.get_table("tag")
+		cu = db_table.select("id, name", "")
+		name = []
+		for row in cu:
+			name.append(row[1])
+		return name
+
 	def __check_uniq_result(self, cu):
 		found = 0
 		this_id = None
@@ -395,6 +403,9 @@ class Notespace(object):
 
 	def get_all_notebooks(self):
 		return self.get_database().get_all_notebooks()
+	
+	def get_all_tags(self):
+		return self.get_database().get_all_tags()
 
 	def exists(self):
 		return self.path != None

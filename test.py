@@ -160,8 +160,12 @@ run_cmd('../mdnote.py list notebook', True,
 """default notebook
 notebook_0
 notebook_1
-"""
-)
+""")
+
+run_cmd('../mdnote.py list tag', True,
+"""default1
+default2
+""")
 
 print "====== Result ========"
 print "Success:", ok_count
