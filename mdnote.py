@@ -1,17 +1,29 @@
 #!/usr/bin/python
-import sys
-import cmd_init
-import cmd_add
-import cmd_list
-import cmd_list_notebook
+import sys, os
+import glob
 import errors
 
-cmd_dict = {
-	"init":cmd_init.Command(),
-	"add" :cmd_add.Command(),
-	"list":cmd_list.Command(),
-	"list_notebook":cmd_list_notebook.Command(),
-}
+# import all module like cmd_* and build cmd_dict like "list":cmd_list
+def find_files(dirname, pattern):
+	cwd = os.getcwd()
+	if dirname:
+		os.chdir(dirname)
+
+	result = []
+	for filename in glob.iglob(pattern):
+		result.append(filename)
+	os.chdir(cwd)
+	return result
+
+# assume all the cmd_*.py file are under the dir of this file
+mdnote_path = os.path.realpath(os.path.dirname(sys.argv[0]))
+files = find_files(mdnote_path, "cmd_*.py")
+local_vars = locals()
+cmd_dict = {}
+for file_name in files:
+	module_name = os.path.basename(file_name)[:-3]
+	local_vars[module_name] = __import__(module_name)
+	cmd_dict[module_name[4:]] = local_vars[module_name].Command()
 
 def list_cmds():
 	print "commands here"
