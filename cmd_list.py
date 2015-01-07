@@ -8,9 +8,9 @@ from cmd import *
 from notebook import Notebook
 from notebook import Notespace
 
-class Main(CommandGeneral):
+class NoteTarget(CommandGeneral):
 	def __init__(self):
-		super(Main, self).__init__()
+		super(NoteTarget, self).__init__()
 		self.arg_notebook = None
 		self.arg_tags = None
 		self.arg_string = None
@@ -109,4 +109,48 @@ class Main(CommandGeneral):
 
 	def usage(self):
 		print "usage: mdnote list"
+
+class NotebookTarget(CommandGeneral):
+	def __init__(self):
+		super(NotebookTarget, self).__init__()
+		self.arg_notebook = None
+		self.arg_tags = None
+		self.arg_string = None
+		self.arg_detail = False
+
+	def main(self, argc, argv):
+		if argc < 1:
+			self.usage()
+			raise errors.UsageError()
+		opts, args = getopt.getopt(argv[1:], "d", 
+				["detail"])
+		for op, value in opts:
+			if op in ("-d", "--detail"):
+				self.arg_detail = True
+
+		# find notespace
+		self.notespace = Notespace()
+		if not self.notespace.find_notespace("."):
+			raise errors.NotFoundError("Can't find notespace maybe\
+					you should run init first")
+
+		notebooks = self.notespace.get_all_notebooks()
+		for notebook in notebooks:
+			print notebook
+	
+	def usage(self):
+		print "usage: mdnote list notebook"
+
+class Main(CommandWithTarget):
+	def __init__(self):
+		target_factory = TargetFactory({
+			"note":NoteTarget,
+			"notebook":NotebookTarget,
+			#"tag":TagTarget,
+			#"target":TargetTarget,
+		})
+		super(Main, self).__init__(target_factory)
+
+	def usage(self):
+		print "cmd_list"
 
