@@ -61,21 +61,21 @@ for notebook_idx in range(notebook_count):
 run_cmd('../mdnote.py init', True)
 
 # not specified notes
-run_cmd('../mdnote.py add -n notebook1', True, 2)
+run_cmd('../mdnote.py add note -n notebook1', True, 2)
 
 # not existed file
-run_cmd('../mdnote.py add not_existed', True)
+run_cmd('../mdnote.py add note not_existed', True)
 
 # different path
-run_cmd('../mdnote.py add default_0', True)
-run_cmd('../mdnote.py add ./default_1', True)
-run_cmd('../mdnote.py add ~/Program/mdnote/test_dir/default_2', True)
+run_cmd('../mdnote.py add note default_0', True)
+run_cmd('../mdnote.py add note ./default_1', True)
+run_cmd('../mdnote.py add note ~/Program/mdnote/test_dir/default_2', True)
 
 # sub directory
 run_cmd('touch sub_dir/sub0 sub_dir/sub1 sub_dir/sub2', False)
-run_cmd('../mdnote.py add sub_dir/sub0', True)
-run_cmd('../mdnote.py add ./sub_dir/sub1', True)
-run_cmd('../mdnote.py add ~/Program/mdnote/test_dir/sub_dir/sub2', True)
+run_cmd('../mdnote.py add note sub_dir/sub0', True)
+run_cmd('../mdnote.py add note ./sub_dir/sub1', True)
+run_cmd('../mdnote.py add note ~/Program/mdnote/test_dir/sub_dir/sub2', True)
 run_cmd('../mdnote.py list -d', True, 
 """default_0|default notebook|
 default_1|default notebook|
@@ -85,15 +85,15 @@ sub_dir/sub1|default notebook|
 sub_dir/sub2|default notebook|
 """)
 
-run_cmd('../mdnote.py add -t default1 default_1', True)
-run_cmd('../mdnote.py add -t default1 default_2', True)
-run_cmd('../mdnote.py add -t default2 default_1', True)
+run_cmd('../mdnote.py add note -t default1 default_1', True)
+run_cmd('../mdnote.py add note -t default1 default_2', True)
+run_cmd('../mdnote.py add note -t default2 default_1', True)
 
 # add notes
 for notebook_idx in range(notebook_count):
-	run_cmd('find -name "notebook_' + str(notebook_idx) + '*" | xargs ../mdnote.py add -n notebook_' + str(notebook_idx), True)
-run_cmd('../mdnote.py add -n notebook_1 -t "default1" notebook_1_1', True)
-run_cmd('../mdnote.py add -n notebook_1 -t "default1; default2" notebook_1_2', True)
+	run_cmd('find -name "notebook_' + str(notebook_idx) + '*" | xargs ../mdnote.py add note -n notebook_' + str(notebook_idx), True)
+run_cmd('../mdnote.py add note -n notebook_1 -t "default1" notebook_1_1', True)
+run_cmd('../mdnote.py add note -n notebook_1 -t "default1; default2" notebook_1_2', True)
 
 run_cmd('../mdnote.py list', True,
 """default_0

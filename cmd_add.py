@@ -1,23 +1,20 @@
 import os
 import getopt
 
+from cmd import *
 import debug
 import errors
 import arguments
-from cmd import Cmd
 from notebook import Notebook
 from notebook import Notespace
 
-class Command(Cmd):
+class NoteTarget(CommandGeneral):
 	def __init__(self):
-		Cmd.__init__(self)
+		super(NoteTarget, self).__init__()
 		self.arg_notebook = None
 		self.arg_tags = None
 
-	def run(self, argc, argv):
-		if argc < 2:
-			self.usage()
-			raise error.UsageError()
+	def main(self, argc, argv):
 		opts, args = getopt.getopt(argv[1:], "n:t:", ["notebook=", "tag="])
 		for op, value in opts:
 			if op in ("-n", "--notebook"):
@@ -31,6 +28,7 @@ class Command(Cmd):
 		debug.message(debug.DEBUG, "notes are", self.arg_notes)
 		if not self.arg_notes:
 			raise errors.UsageError("No note specified")
+
 
 		# find notespace
 		self.notespace = Notespace()
@@ -81,10 +79,23 @@ class Command(Cmd):
 				for note in notes:
 					tag.add_note(note, False)
 
+class NotebookTarget(CommandGeneral):
+	pass
 
-				 
-				
+class TagTarget(CommandGeneral):
+	pass
+
+# The main command class of this command
+class Main(CommandWithTarget):
+	def __init__(self):
+		target_factory = TargetFactory({
+			"note":NoteTarget,
+			"notebook":NotebookTarget,
+			"tag":TagTarget,
+		})
+		super(Main, self).__init__(target_factory)
+
 	def usage(self):
-		print "usage: mdnote add"
+		print "cmd_add"
 
 

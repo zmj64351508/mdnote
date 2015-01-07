@@ -2,16 +2,16 @@
 #     init
 import os
 import debug
-from cmd import Cmd
+from cmd import *
 from notebook import Notebook
 from notebook import Notespace
 
-class Command(Cmd):
+class Main(CommandGeneral):
 	def __init__(self):
-		Cmd.__init__(self)
+		super(Main, self).__init__()
 		self.notebooks = {}
 
-	def run(self, argc, argv):
+	def main(self, argc, argv):
 		if argc < 1:
 			self.usage()
 			exit()

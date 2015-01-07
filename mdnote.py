@@ -23,7 +23,7 @@ cmd_dict = {}
 for file_name in files:
 	module_name = os.path.basename(file_name)[:-3]
 	local_vars[module_name] = __import__(module_name)
-	cmd_dict[module_name[4:]] = local_vars[module_name].Command()
+	cmd_dict[module_name[4:]] = local_vars[module_name].Main()
 
 def list_cmds():
 	print "commands here"
@@ -40,7 +40,7 @@ def main(argc, argv):
 		exit(1)
 
 	try:
-		cmd.run(argc - 1, argv[1:])
+		cmd.main(argc - 1, argv[1:])
 	except errors.UsageError as e:
 		cmd.usage()
 		exit(2)

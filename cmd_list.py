@@ -4,19 +4,19 @@ import getopt
 import debug
 import errors
 import arguments
-from cmd import Cmd
+from cmd import *
 from notebook import Notebook
 from notebook import Notespace
 
-class Command(Cmd):
+class Main(CommandGeneral):
 	def __init__(self):
-		Cmd.__init__(self)
+		super(Main, self).__init__()
 		self.arg_notebook = None
 		self.arg_tags = None
 		self.arg_string = None
 		self.arg_detail = False
 
-	def run(self, argc, argv):
+	def main(self, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
