@@ -3,12 +3,14 @@ import sys
 import cmd_init
 import cmd_add
 import cmd_list
+import cmd_list_notebook
 import errors
 
 cmd_dict = {
 	"init":cmd_init.Command(),
 	"add" :cmd_add.Command(),
 	"list":cmd_list.Command(),
+	"list_notebook":cmd_list_notebook.Command(),
 }
 
 def list_cmds():

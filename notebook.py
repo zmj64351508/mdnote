@@ -285,6 +285,14 @@ class Database(object):
 		cu = db_table.select("id", "WHERE name='" + tag_name +"'")
 		return self.__check_uniq_result(cu)
 
+	def get_all_notebooks(self):
+		db_table = self.get_table("notebook")
+		cu = db_table.select("id, name", "")
+		name = []
+		for row in cu:
+			name.append(row[1])
+		return name
+
 	def __check_uniq_result(self, cu):
 		found = 0
 		this_id = None
@@ -384,6 +392,9 @@ class Notespace(object):
 		for row in cursor:
 			path.append(row[1])
 		return path
+
+	def get_all_notebooks(self):
+		return self.get_database().get_all_notebooks()
 
 	def exists(self):
 		return self.path != None

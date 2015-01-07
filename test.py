@@ -2,7 +2,7 @@
 
 import sys, os, subprocess, re
 
-show_result = False
+show_result = True
 
 ok_count = 0
 fail_count = 0
@@ -155,6 +155,13 @@ run_cmd('../mdnote.py list -d -n notebook_1 -t "default1; default2"', True,
 
 
 run_cmd('../mdnote.py list -n not_exsit_nb', True, 4)
+
+run_cmd('../mdnote.py list_notebook', True,
+"""default notebook
+notebook_0
+notebook_1
+"""
+)
 
 print "====== Result ========"
 print "Success:", ok_count
