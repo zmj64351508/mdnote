@@ -349,10 +349,11 @@ class Notespace(object):
 			meta_path = os.path.join(path, ".mdnote")
 			if os.path.isdir(meta_path):
 				notespace_path = path
-				break;
-			if path == "/":
-				break;
-			path = os.path.split(path)[0]
+				break
+			parent_path = os.path.abspath(os.path.join(path, os.pardir))
+			if cmp(parent_path, path) == 0:
+				break
+			path = parent_path
 
 		# database should be created with notespace. If there's no database it's an error
 		db_path = self.get_database_path(meta_path, self.db_name)
