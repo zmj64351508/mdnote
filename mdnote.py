@@ -25,6 +25,10 @@ for file_name in files:
 	local_vars[module_name] = __import__(module_name)
 	cmd_dict[module_name[4:]] = local_vars[module_name].Main()
 
+# server command is special
+import server
+cmd_dict["server"] = server.Main(cmd_dict)
+
 def list_cmds():
 	print "commands here"
 

@@ -32,6 +32,8 @@ class Main(CommandGeneral):
 		else:
 			debug.message(debug.DEBUG, "Notespace already exists do nothing")
 
+	def server_main(self, server, argc, argv):
+		self.main(argc, argv)
 
 	def usage(self):
 		print "usage: mdnote init"

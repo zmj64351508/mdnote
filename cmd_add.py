@@ -8,13 +8,36 @@ import arguments
 from notebook import Notebook
 from notebook import Notespace
 
+class AddGeneral(object):
+	def __init__(self):
+		pass
+
+	def get_notespace(self, server):
+		if server:
+			notespace = server.get_notespace()
+			if not notespace:
+				raise errors.NotFoundError("No notespace found. Maybe you should run open first")
+		else:
+			# find notespace
+			notespace = Notespace()
+			if not notespace.find_notespace("."):
+				raise errors.NotFoundError("Can't find notespace maybe you should run init first")
+		return notespace
+
 class NoteTarget(CommandGeneral):
 	def __init__(self):
 		super(NoteTarget, self).__init__()
 		self.arg_notebook = None
 		self.arg_tags = None
+		self.target_general = AddGeneral()
 
+	def server_main(self, server, argc, argv):
+		self.do_main(server, argc, argv)
+	
 	def main(self, argc, argv):
+		self.do_main(None, argc, argv)
+
+	def do_main(self, server, argc, argv):
 		opts, args = getopt.getopt(argv[1:], "n:t:", ["notebook=", "tag="])
 		for op, value in opts:
 			if op in ("-n", "--notebook"):
@@ -31,10 +54,7 @@ class NoteTarget(CommandGeneral):
 
 
 		# find notespace
-		self.notespace = Notespace()
-		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe \
-					you should run init first")
+		self.notespace = self.target_general.get_notespace(server)
 
 		# add note to notebook
 		if self.arg_notebook:

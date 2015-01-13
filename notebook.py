@@ -97,15 +97,14 @@ class NoteVsTagTable(DatabaseTable):
 				" VALUES(null, " + n_id.__str__() + ", " + t_id.__str__() + ")")
 	
 class Database(object):
-	tables = {
-		"notebook":NotebookTable, 
-		"note":NoteTable,
-		#"note_vs_notebook":NoteVsNotebookTable,
-		"tag":TagTable,
-		"note_vs_tag":NoteVsTagTable,
-	}
-
 	def __init__(self, path):
+		self.tables = {
+			"notebook":NotebookTable,
+			"note":NoteTable,
+			#"note_vs_notebook":NoteVsNotebookTable,
+			"tag":TagTable,
+			"note_vs_tag":NoteVsTagTable,
+		}
 		self.connect = sqlite3.connect(path)
 		# Transfer class to instance
 		for name in self.tables:

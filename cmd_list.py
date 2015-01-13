@@ -8,6 +8,22 @@ from cmd import *
 from notebook import Notebook
 from notebook import Notespace
 
+class ListGeneral(object):
+	def __init__(self):
+		pass
+
+	def get_notespace(self, server):
+		if server:
+			notespace = server.get_notespace()
+			if not notespace:
+				raise errors.NotFoundError("No notespace found. Maybe you should run open first")
+		else:
+			# find notespace
+			notespace = Notespace()
+			if not notespace.find_notespace("."):
+				raise errors.NotFoundError("Can't find notespace maybe you should run init first")
+		return notespace
+
 class NoteTarget(CommandGeneral):
 	def __init__(self):
 		super(NoteTarget, self).__init__()
@@ -15,8 +31,15 @@ class NoteTarget(CommandGeneral):
 		self.arg_tags = None
 		self.arg_string = None
 		self.arg_detail = False
+		self.target_general = ListGeneral()
 
+	def server_main(self, server, argc, argv):
+		self.do_main(server, argc, argv)
+	
 	def main(self, argc, argv):
+		self.do_main(None, argc, argv)
+
+	def do_main(self, server, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -39,11 +62,7 @@ class NoteTarget(CommandGeneral):
 		debug.message(debug.DEBUG, "\ttags    : ", self.arg_tags)
 		debug.message(debug.DEBUG, "\tstring  : ", self.arg_string)
 
-		# find notespace
-		self.notespace = Notespace()
-		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe\
-					you should run init first")
+		self.notespace = self.target_general.get_notespace(server)
 
 		notebook = None
 		if self.arg_notebook:
@@ -57,7 +76,7 @@ class NoteTarget(CommandGeneral):
 			# grep string
 			pass
 
-		self.list_filter(notebook, tags)
+		self.list_filter(server, notebook, tags)
 
 	def find_notes(self, nb_names, n_names):
 		pass
@@ -86,7 +105,7 @@ class NoteTarget(CommandGeneral):
 				raise errors.NoSuchRecord()
 		return tags
 
-	def list_filter(self, notebook, tags):
+	def list_filter(self, server, notebook, tags):
 		if tags or notebook:
 			notes_detail = self.notespace.filter_note_detail(notebook, tags)
 		else:
@@ -97,15 +116,15 @@ class NoteTarget(CommandGeneral):
 
 		if self.arg_detail:
 			for detail in notes_detail:
-				sys.stdout.write(detail["path"].__str__() + "|" + 
+				self.output_result(server, detail["path"].__str__() + "|" + 
 						detail["notebook"].__str__() + "|")
 				for tag in detail["tag"]:
 					if tag:
-						sys.stdout.write(tag.__str__()+";")
-				sys.stdout.write("\n")
+						self.output_result(server, tag.__str__()+";")
+				self.output_result(server, "\n")
 		else:
 			for detail in notes_detail:
-				sys.stdout.write(detail["path"].__str__() + "\n")
+				self.output_result(server, detail["path"].__str__() + "\n")
 
 	def usage(self):
 		print "usage: mdnote list"
@@ -117,8 +136,15 @@ class NotebookTarget(CommandGeneral):
 		self.arg_tags = None
 		self.arg_string = None
 		self.arg_detail = False
+		self.target_general = ListGeneral()
 
+	def server_main(self, server, argc, argv):
+		self.do_main(server, argc, argv)
+	
 	def main(self, argc, argv):
+		self.do_main(None, argc, argv)
+
+	def do_main(self, server, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -129,14 +155,11 @@ class NotebookTarget(CommandGeneral):
 				self.arg_detail = True
 
 		# find notespace
-		self.notespace = Notespace()
-		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe\
-					you should run init first")
+		self.notespace = self.target_general.get_notespace(server)
 
 		notebooks = self.notespace.get_all_notebooks()
 		for notebook in notebooks:
-			print notebook
+			self.output_result(server, notebook + "\n")
 	
 	def usage(self):
 		print "usage: mdnote list notebook"
@@ -145,8 +168,15 @@ class TagTarget(CommandGeneral):
 	def __init__(self):
 		super(TagTarget, self).__init__()
 		self.arg_detail = False
+		self.target_general = ListGeneral()
 
+	def server_main(self, server, argc, argv):
+		self.do_main(server, argc, argv)
+	
 	def main(self, argc, argv):
+		self.do_main(None, argc, argv)
+
+	def do_main(self, server, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -157,14 +187,11 @@ class TagTarget(CommandGeneral):
 				self.arg_detail = True
 
 		# find notespace
-		self.notespace = Notespace()
-		if not self.notespace.find_notespace("."):
-			raise errors.NotFoundError("Can't find notespace maybe\
-					you should run init first")
+		self.notespace = self.target_general.get_notespace(server)
 
 		tags = self.notespace.get_all_tags()
 		for tag in tags:
-			print tag
+			self.output_result(server, tag + "\n")
 	
 	def usage(self):
 		print "usage: mdnote list notebook"
