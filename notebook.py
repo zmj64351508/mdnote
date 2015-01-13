@@ -341,7 +341,7 @@ class Notespace(object):
 		self.db = Database(db_path)
 		self.db.create()
 	
-	def find_notespace(self, from_path):
+	def find_notespace(self, from_path, up_to_root = True):
 		notespace_path = None
 		meta_path = None
 		path = os.path.abspath(from_path)
@@ -350,10 +350,17 @@ class Notespace(object):
 			if os.path.isdir(meta_path):
 				notespace_path = path
 				break
+			# only find the note space in current directory
+			if not up_to_root:
+				break
+			# otherwise find it in parent directory
 			parent_path = os.path.abspath(os.path.join(path, os.pardir))
 			if cmp(parent_path, path) == 0:
 				break
 			path = parent_path
+
+		if not notespace_path:
+			return None
 
 		# database should be created with notespace. If there's no database it's an error
 		db_path = self.get_database_path(meta_path, self.db_name)

@@ -15,12 +15,16 @@ class Main(CommandGeneral):
 		if argc < 1:
 			self.usage()
 			exit()
+		elif argc == 2:
+			path = argv[1]
+		else:
+			path = "."
 
 		# create notespace first if necessary
 		self.notespace = Notespace()
-		if not self.notespace.find_notespace("."):
+		if not self.notespace.find_notespace(path, up_to_root = False):
 			debug.message(debug.DEBUG, "No notespace found, creating notespace")
-			self.notespace.create(".")
+			self.notespace.create(path)
 
 			# create Notebooks
 			debug.message(debug.DEBUG, "Creating default notebook")
