@@ -69,13 +69,13 @@ run_cmd('../mdnote.py add note not_existed', True)
 # different path
 run_cmd('../mdnote.py add note default_0', True)
 run_cmd('../mdnote.py add note ./default_1', True)
-run_cmd('../mdnote.py add note ~/Program/mdnote/test_dir/default_2', True)
+run_cmd('../mdnote.py add note ' + os.path.abspath("default_2"), True)
 
 # sub directory
 run_cmd('touch sub_dir/sub0 sub_dir/sub1 sub_dir/sub2', False)
 run_cmd('../mdnote.py add note sub_dir/sub0', True)
 run_cmd('../mdnote.py add note ./sub_dir/sub1', True)
-run_cmd('../mdnote.py add note ~/Program/mdnote/test_dir/sub_dir/sub2', True)
+run_cmd('../mdnote.py add note ' + os.path.abspath("sub_dir/sub2"), True)
 run_cmd('../mdnote.py list note -d', True, 
 """default_0|default notebook|
 default_1|default notebook|
