@@ -8,7 +8,7 @@ from notebook import Notebook
 from notebook import Notespace
 
 host = ""
-port = 46420
+port = 46000
 
 class Main(CommandGeneral):
 	def __init__(self, general_commands):
@@ -30,6 +30,7 @@ class Server(object):
 		self.general_commands = general_commands
 
 	def start(self):
+		debug.message(debug.DEBUG, "starting server")
 		server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		#server.setblocking(False)
 		#server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -42,8 +43,10 @@ class Server(object):
 		self.output_buffer = {}
 		timeout = 5
 
+		debug.message(debug.DEBUG, "started server, listening")
 		while True:
 			connection, client_addr = server.accept()
+			debug.message(debug.DEBUG, "new client ", client_addr, " accepted.")
 			thread = ServerThread(connection, client_addr, self.general_commands)
 			thread.start()
 

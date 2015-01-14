@@ -107,7 +107,7 @@ def run_test_case(is_server):
 		#run_sub_cmd("server", False)
 		global con
 		con = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		con.connect(("127.0.0.1", 46420))
+		con.connect(("127.0.0.1", 46000))
 	else:
 		run_sub_cmd = run_sub_cmd_noserver
 
