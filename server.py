@@ -113,7 +113,6 @@ class ServerCommand(object):
 			"close":self.do_close,
 		}
 		self.notespace = None
-		self.origin_path = None
 		self.general_commands = general_commands
 
 	def do_open(self, thread, argc, argv):
@@ -130,7 +129,6 @@ class ServerCommand(object):
 			debug.message(debug.ERROR, "No notespace found")
 			return -1
 		else:
-			self.origin_path = os.getcwd()
 			os.chdir(path)
 		return 0
 
@@ -140,8 +138,6 @@ class ServerCommand(object):
 
 	def close(self):
 		self.notespace = None
-		if self.origin_path:
-			os.chdir(self.origin_path)
 
 	def run_command(self, thread, argc, argv):
 		debug.message(debug.DEBUG, "run command: ", argv)
