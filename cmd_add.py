@@ -5,7 +5,7 @@ from cmd import *
 import debug
 import errors
 import arguments
-from notebook import Notebook
+from notebook import Notebook, Note
 from notebook import Notespace
 
 class AddGeneral(object):
@@ -29,6 +29,7 @@ class NoteTarget(CommandGeneral):
 		super(NoteTarget, self).__init__()
 		self.arg_notebook = None
 		self.arg_tags = None
+		self.arg_force = False
 		self.target_general = AddGeneral()
 
 	def server_main(self, server, argc, argv):
@@ -38,7 +39,7 @@ class NoteTarget(CommandGeneral):
 		self.do_main(None, argc, argv)
 
 	def do_main(self, server, argc, argv):
-		opts, args = getopt.getopt(argv[1:], "n:t:", ["notebook=", "tag="])
+		opts, args = getopt.getopt(argv[1:], "n:t:f", ["notebook=", "tag=", "force"])
 		for op, value in opts:
 			if op in ("-n", "--notebook"):
 				self.arg_notebook = value
@@ -46,6 +47,9 @@ class NoteTarget(CommandGeneral):
 			elif op in ("-t", "--tag"):
 				self.arg_tags = arguments.get_multi_arg(value)
 				debug.message(debug.DEBUG, "tag is ", value)
+			elif op in ("-f", "--force"):
+				self.arg_force = True
+				debug.message(debug.DEBUG, "force update")
 
 		self.arg_notes = args
 		debug.message(debug.DEBUG, "notes are", self.arg_notes)
@@ -58,12 +62,12 @@ class NoteTarget(CommandGeneral):
 
 		# add note to notebook
 		if self.arg_notebook:
-			note = self.add_notes_to_notebook(self.arg_notes, self.arg_notebook)
+			note = self.add_notes_to_notebook(self.arg_notes, self.arg_notebook, self.arg_force)
 		else:
 			debug.message(debug.DEBUG, 
 					"No notebook specified, using default notebook")
 			note = self.add_notes_to_notebook(self.arg_notes, 
-					self.notespace.get_default_notebook())
+					self.notespace.get_default_notebook(), self.arg_force)
 
 		# add tags
 		if self.arg_tags:
@@ -72,23 +76,57 @@ class NoteTarget(CommandGeneral):
 		self.notespace.get_database().commit()
 	
 	# notebook can be class Notebook or notebook path
-	def add_notes_to_notebook(self, notes_path, notebook):
+	def add_notes_to_notebook(self, notes_path, notebook, force_update):
 		notes = []
 		if type(notebook) == str:
 			nb_name = notebook
 			notebook = self.notespace.find_notebook(nb_name)
-			if not notebook:
-				debug.message(debug.DEBUG, 
-						"Automatically creating notebook ", nb_name)
-				notebook = self.notespace.create_notebook(nb_name)
-			for note_path in notes_path:
-				notes.append(notebook.add_note(note_path, False))
-
 		elif type(notebook) == Notebook:
+			pass
+		else:
+			raise TypeError
+
+
+		need_update = False
+		if not force_update:
+			# If all the note presented are inserted, but we don't want force update.
+			# It should not do any update for the notebook
 			for note_path in notes_path:
-				notes.append(notebook.add_note(note_path, False))
+				note = Note(self.notespace, note_path)
+				if not note.get_id() and note.validate_path():
+					debug.message(debug.DEBUG, "at least 1 note is not in notespace, need update")
+					need_update = True
+				else:
+					notes.append(note)
+		else:
+			need_update = True
+
+		if not need_update:
+			return notes
+
+		# So we finally need to update
+		notes = []
+		if not notebook:
+			debug.message(debug.DEBUG, 
+					"Automatically creating notebook ", nb_name)
+			notebook = self.notespace.create_notebook(nb_name)
+
+		# try to update
+		for note_path in notes_path:
+			#notes.append(notebook.add_note(note_path, False))
+			notes.append(self.update_add_notes_to_notebook(note_path, notebook, force_update))
 
 		return notes
+
+	def update_add_notes_to_notebook(self, note_path, notebook, force_update):
+		if force_update:
+			try:
+				note = notebook.update_note(note_path, False)
+			except errors.NoSuchRecord:
+				note = notebook.add_note(note_path, False)
+		else:
+			note = notebook.add_note(note_path, False)
+		return note
 
 	def add_notes_to_tags(self, notes, tags):
 		if type(tags) == list and type(tags[0]) == str:

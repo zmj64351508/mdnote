@@ -96,6 +96,7 @@ def run_sub_cmd_server(sub_command, verbose, expected_result=""):
 notebook_count = 2
 note_per_notebook = 3
 
+start_dir = os.getcwd()
 test_dir = "test_dir"
 con = None
 
@@ -111,10 +112,107 @@ def run_test_case(is_server):
 	else:
 		run_sub_cmd = run_sub_cmd_noserver
 
+	os.chdir(start_dir)
 	run_cmd("rm -rf " + test_dir, False)
 	os.makedirs(test_dir)
-	os.makedirs(test_dir + "/sub_dir")
 	os.chdir(test_dir)
+
+	run_cmd("touch note_exist_1 note_exist_2 note_exist_3", True)
+	run_cmd("touch note_new_1 note_new_2 note_new_3", True)
+	run_sub_cmd("init " + os.getcwd(), True)
+	if is_server:
+		run_sub_cmd('open ' + os.getcwd(), True)
+	# add -n without -f, all notes are not in notespace
+	run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
+	run_sub_cmd("list note -d", True, 
+	"note_exist_1|notebook_exist|\n"\
+	"note_exist_2|notebook_exist|\n"\
+	"note_exist_3|notebook_exist|\n"\
+	)
+	# add -n without -f
+	# 1. all notes are in notespace
+	# 2. new notebook specified
+	run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
+	run_sub_cmd("list note -d", True, 
+	"note_exist_1|notebook_exist|\n"\
+	"note_exist_2|notebook_exist|\n"\
+	"note_exist_3|notebook_exist|\n"\
+	)
+	run_sub_cmd("list notebook", True, 
+	"default notebook\n"\
+	"notebook_exist\n"\
+	)
+
+	# add -n without -f
+	# 1. just 1 note are not in notespace, but didn't exist in directory
+	# 2. new notebook specified
+	run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
+	run_sub_cmd("list note -d", True,
+	"note_exist_1|notebook_exist|\n"\
+	"note_exist_2|notebook_exist|\n"\
+	"note_exist_3|notebook_exist|\n"\
+	)
+	run_sub_cmd("list notebook", True, 
+	"default notebook\n"\
+	"notebook_exist\n"\
+	)
+
+	# add -n without -f
+	# 1. just 1 note are not in notespace
+	# 2. new notebook specified
+	run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
+	run_sub_cmd("list note -d", True,
+	"note_exist_1|notebook_exist|\n"\
+	"note_exist_2|notebook_exist|\n"\
+	"note_exist_3|notebook_exist|\n"\
+	"note_new_1|new_notebook|\n"\
+	)
+	run_sub_cmd("list notebook", True, 
+	"default notebook\n"\
+	"notebook_exist\n"\
+	"new_notebook\n"\
+	)
+
+	# add -n -f
+	# 1. just 1 note are not in notespace
+	run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
+	run_sub_cmd("list note -d", True,
+	"note_exist_1|new_notebook|\n"\
+	"note_exist_2|new_notebook|\n"\
+	"note_exist_3|new_notebook|\n"\
+	"note_new_1|new_notebook|\n"\
+	"note_new_2|new_notebook|\n"\
+	)
+
+	# add -n -f
+	# 1. just 1 note are not in notespace, but not exist
+	# 2. new notebook specified
+	run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
+	run_sub_cmd("list note -d", True,
+	"note_exist_1|new_notebook_2|\n"\
+	"note_exist_2|new_notebook|\n"\
+	"note_exist_3|new_notebook|\n"\
+	"note_new_1|new_notebook|\n"\
+	"note_new_2|new_notebook|\n"\
+	)
+
+	# add -n -f
+	# 1. just 1 note are not in notespace
+	# 2. new notebook specified
+	run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
+	run_sub_cmd("list note -d", True,
+	"note_exist_1|new_notebook_2|\n"\
+	"note_exist_2|new_notebook|\n"\
+	"note_exist_3|new_notebook|\n"\
+	"note_new_1|new_notebook|\n"\
+	"note_new_2|new_notebook|\n"\
+	"note_new_3|new_notebook_2|\n"\
+	)
+
+	run_cmd("rm -rf ./* .mdnote", False)
+
+	# common test
+	os.makedirs("sub_dir")
 
 	for i in range(3):
 		run_cmd("touch default_" + str(i), False)

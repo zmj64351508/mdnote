@@ -41,10 +41,10 @@ class NotebookTable(DatabaseTable):
 	def insert(self, nb_name):
 		self.connect.execute("INSERT INTO notebook VALUES(null, '" + nb_name + "')")
 
-	def update_note(self, nb_id, n_id):
-		cursor = self.select_by_id(nb_id, "note_ids")
-		note_ids = cursor.next()[0] +  n_id.__str__() + ";"
-		self.update_by_id(nb_id, "note_ids='" + note_ids + "'")
+	#def update_note(self, nb_id, n_id):
+		#cursor = self.select_by_id(nb_id, "note_ids")
+		#note_ids = cursor.next()[0] +  n_id.__str__() + ";"
+		#self.update_by_id(nb_id, "note_ids='" + note_ids + "'")
 
 class NoteTable(DatabaseTable):
 	def __init__(self, connect, name):
@@ -132,6 +132,12 @@ class Database(object):
 		except StopIteration:
 			n_id = note_table.insert_note(note, notebook)
 		note.set_id(n_id)
+
+	def update_note(self, note, notebook):
+		note_table = self.get_table("note")
+		if not note.get_id():
+			raise errors.NoSuchRecord("update exception: no note " + note.get_relpath())
+		note_table.update("nb_id=" + str(notebook.get_id()), "WHERE id='"+str(note.get_id())+"'")
 
 	def update_tag(self, tag, note):
 		n_v_t_table = self.get_table("note_vs_tag")
@@ -273,6 +279,10 @@ class Database(object):
 		cursor = self.get_notes_command("")
 		return self.get_notes_detail_by_cursor(cursor)
 		
+	def get_note_id(self, note_path):
+		db_table = self.get_table("note")
+		cu = db_table.select("id", "WHERE path='" + note_path + "'")
+		return self.__check_uniq_result(cu)
 
 	def get_notebook_id(self, nb_name):
 		db_table = self.get_table("notebook")
@@ -379,7 +389,7 @@ class Notespace(object):
 			note_path = os.path.join(self.path, note_path)
 		if os.path.isfile(note_path):
 			# Note need to know the relative path
-			return Note(os.path.relpath(note_path, self.path))
+			return Note(self, os.path.relpath(note_path, self.path))
 		else:
 			return None
 
@@ -460,24 +470,16 @@ class Notespace(object):
 			self.default_notebook = self.find_notebook(self.default_notebook_name)
 		return self.default_notebook
 
-
-class NoteContainer(object):
-	def __init__(self, notespace, name):
-		assert(notespace != None and name != None)
+class NoteObject(object):
+	def __init__(self, notespace):
+		assert(notespace != None)
 		self.notespace = notespace
-		self.name = name;
 		self.id = self.update_id()
-
-	def create(self):
-		raise NotImplementedError
-
-	def get_name(self):
-		return self.name
 
 	def get_database(self):
 		db = self.notespace.get_database()
 		if not db:
-			raise NotFoundError("No database")
+			raise errors.NotFoundError("No database")
 		return db
 
 	def get_id(self):
@@ -495,6 +497,18 @@ class NoteContainer(object):
 	def update_id(self):
 		raise NotImplementedError
 
+class NoteContainer(NoteObject):
+	def __init__(self, notespace, name):
+		assert(name != None)
+		self.name = name
+		super(NoteContainer, self).__init__(notespace)
+
+	def create(self):
+		raise NotImplementedError
+
+	def get_name(self):
+		return self.name
+
 	def add_note(self, note_path, sync):
 		raise NotImplementedError
 
@@ -505,19 +519,31 @@ class Notebook(NoteContainer):
 		self.id = self.get_id()
 		debug.message(debug.DEBUG, "Creating Notebook: ", self.name, " id: ", self.id)
 
-	def add_note(self, note_path, sync):
+	def notepath_to_note(self, note_path):
 		# find note if comes the string as note's name
 		note_path = os.path.normpath(note_path)
 		if os.path.isabs(note_path):
 			note_path = os.path.relpath(note_path, self.notespace.get_path())
 		note = self.notespace.find_note_from_path(note_path)
+		if not note:
+			debug.message(debug.WARN, "Can not find note ", note_path)
+		return note
+
+	def update_note(self, note_path, sync):
+		note = self.notepath_to_note(note_path)
+		if note:
+			self.get_database().update_note(note, self)
+			if sync:
+				self.get_database().commit()
+		return note
+
+	def add_note(self, note_path, sync):
+		note = self.notepath_to_note(note_path)
 		if note:
 			self.get_database().new_note(note, self)
 			#self.get_database().update_notebook(self, note)
 			if sync:
 				self.get_database().commit()
-		else:
-			debug.message(debug.WARN, "Can not find note ", note_path)
 		return note
 
 	def update_id(self):
@@ -547,15 +573,14 @@ class Tag(NoteContainer):
 		self.id = self.get_database().get_tag_id(self.name)
 		return self.id
 
-class Note(object):
-	# We must ensure note_path is the existed for a note and is relative path
-	def __init__(self, note_path):
-		assert(not os.path.isabs(note_path))
-		self.relpath = note_path
+class Note(NoteObject):
+	def __init__(self, notespace, note_path):
+		self.relpath = os.path.relpath(note_path, notespace.get_path())
 		self.name = os.path.basename(note_path)
-		self.id = None
+		super(Note, self).__init__(notespace)
 
-	def get_id(self):
+	def update_id(self):
+		self.id = self.get_database().get_note_id(self.relpath)
 		return self.id
 
 	def set_id(self, n_id):
@@ -566,6 +591,13 @@ class Note(object):
 
 	def get_name(self):
 		return self.name
+
+	def validate_path(self):
+		note = self.notespace.find_note_from_path(self.relpath)
+		if note:
+			return True
+		else:
+			return False
 
 		
 
