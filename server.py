@@ -6,6 +6,8 @@ import debug
 from cmd import *
 from notebook import Notebook
 from notebook import Notespace
+import signal
+
 
 host = ""
 port = 46000
@@ -25,6 +27,12 @@ class Main(CommandGeneral):
 	def usage(self):
 		print "usage: mdnote server"
 
+def signal_handler(signal, frame):
+	global server_socket
+	debug.message(debug.INFO, "exit because of signal")
+	server_socket.close()
+	sys.exit(0)
+
 class Server(object):
 	def __init__(self, general_commands):
 		self.general_commands = general_commands
@@ -42,6 +50,12 @@ class Server(object):
 		outputs = []
 		self.output_buffer = {}
 		timeout = 5
+
+		# need to handler signal
+		global server_socket
+		server_socket = server
+		signal.signal(signal.SIGINT, signal_handler)
+		signal.signal(signal.SIGTERM, signal_handler)
 
 		debug.message(debug.DEBUG, "started server, listening")
 		while True:
