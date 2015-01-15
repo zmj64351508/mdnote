@@ -71,13 +71,12 @@ class NoteTarget(CommandGeneral):
 
 		# add tags
 		if self.arg_tags:
-			self.add_notes_to_tags(note, self.arg_tags)
+			self.add_notes_to_tags(note, self.arg_tags, self.arg_force)
 
 		self.notespace.get_database().commit()
 	
 	# notebook can be class Notebook or notebook path
 	def add_notes_to_notebook(self, notes_path, notebook, force_update):
-		notes = []
 		if type(notebook) == str:
 			nb_name = notebook
 			notebook = self.notespace.find_notebook(nb_name)
@@ -86,11 +85,11 @@ class NoteTarget(CommandGeneral):
 		else:
 			raise TypeError
 
-
-		need_update = False
 		if not force_update:
 			# If all the note presented are inserted, but we don't want force update.
 			# It should not do any update for the notebook
+			notes = []
+			need_update = False
 			for note_path in notes_path:
 				note = Note(self.notespace, note_path)
 				if not note.get_id() and note.validate_path():
@@ -98,11 +97,8 @@ class NoteTarget(CommandGeneral):
 					need_update = True
 				else:
 					notes.append(note)
-		else:
-			need_update = True
-
-		if not need_update:
-			return notes
+			if not need_update:
+				return notes
 
 		# So we finally need to update
 		notes = []
@@ -114,7 +110,9 @@ class NoteTarget(CommandGeneral):
 		# try to update
 		for note_path in notes_path:
 			#notes.append(notebook.add_note(note_path, False))
-			notes.append(self.update_add_notes_to_notebook(note_path, notebook, force_update))
+			note = self.update_add_notes_to_notebook(note_path, notebook, force_update)
+			if note:
+				notes.append(note)
 
 		return notes
 
@@ -128,7 +126,15 @@ class NoteTarget(CommandGeneral):
 			note = notebook.add_note(note_path, False)
 		return note
 
-	def add_notes_to_tags(self, notes, tags):
+	def add_notes_to_tags(self, notes, tags, force_update):
+		if not notes:
+			return
+
+		if force_update:
+			for note in notes:
+				debug.message(debug.DEBUG, "clearing tags for note " + note.get_relpath())
+				note.clear_tags(False)
+
 		if type(tags) == list and type(tags[0]) == str:
 			for tag_name in tags:
 				tag = self.notespace.find_tag(tag_name)

@@ -19,6 +19,9 @@ class DatabaseTable(object):
 		return self.connect.execute("UPDATE " + self.name + 
 				" SET " + column_val + " " + condition)
 
+	def delete(self, condition):
+		return self.connect.execute("DELETE FROM " + self.name + " " + condition)
+
 	def update_by_id(self, t_id, column_val):
 		return self.update(column_val, "WHERE id=" + t_id.__str__())
 
@@ -154,6 +157,7 @@ class Database(object):
 			debug.message(debug.WARN, "note: ", note.get_name(),
 					" for tag: ", tag.get_name(), 
 					" already exists, ignoring")
+
 		except StopIteration:
 			n_v_t_table.insert(n_id, t_id)
 			
@@ -309,6 +313,10 @@ class Database(object):
 		for row in cu:
 			name.append(row[1])
 		return name
+
+	def clear_note_tags(self, note):
+		db_table = self.get_table("note_vs_tag")
+		db_table.delete("WHERE n_id=" + str(note.get_id()))
 
 	def __check_uniq_result(self, cu):
 		found = 0
@@ -569,6 +577,10 @@ class Tag(NoteContainer):
 			raise errors.NullError
 		return note
 
+	def update_note(self, note, sync):
+		if type(note) != Note:
+			raise TypeError
+
 	def update_id(self):
 		self.id = self.get_database().get_tag_id(self.name)
 		return self.id
@@ -599,7 +611,10 @@ class Note(NoteObject):
 		else:
 			return False
 
-		
+	def clear_tags(self, sync):
+		self.get_database().clear_note_tags(self)
+		if sync:
+			self.get_database().commit()
 
 
 

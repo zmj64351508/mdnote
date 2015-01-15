@@ -96,13 +96,30 @@ def run_sub_cmd_server(sub_command, verbose, expected_result=""):
 notebook_count = 2
 note_per_notebook = 3
 
+run_sub_cmd = None
 start_dir = os.getcwd()
 test_dir = "test_dir"
 con = None
+targets = [
+	"add note -n",
+	"add note -t",
+	"general"
+]
+
+def init_notespace(is_server):
+	os.chdir(start_dir)
+	run_cmd("rm -rf " + test_dir, False)
+	os.makedirs(test_dir)
+	os.chdir(test_dir)
+
+	run_sub_cmd("init " + os.getcwd(), True)
+	if is_server:
+		run_sub_cmd('open ' + os.getcwd(), True)
 
 def run_test_case(is_server):
 	global ok_count
 	global fail_count
+	global run_sub_cmd
 	if is_server:
 		run_sub_cmd = run_sub_cmd_server
 		#run_sub_cmd("server", False)
@@ -112,222 +129,256 @@ def run_test_case(is_server):
 	else:
 		run_sub_cmd = run_sub_cmd_noserver
 
-	os.chdir(start_dir)
-	run_cmd("rm -rf " + test_dir, False)
-	os.makedirs(test_dir)
-	os.chdir(test_dir)
+	if "add note -n" in targets:
+		init_notespace(is_server)
 
-	run_cmd("touch note_exist_1 note_exist_2 note_exist_3", True)
-	run_cmd("touch note_new_1 note_new_2 note_new_3", True)
-	run_sub_cmd("init " + os.getcwd(), True)
-	if is_server:
-		run_sub_cmd('open ' + os.getcwd(), True)
-	# add -n without -f, all notes are not in notespace
-	run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
-	run_sub_cmd("list note -d", True, 
-	"note_exist_1|notebook_exist|\n"\
-	"note_exist_2|notebook_exist|\n"\
-	"note_exist_3|notebook_exist|\n"\
-	)
-	# add -n without -f
-	# 1. all notes are in notespace
-	# 2. new notebook specified
-	run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
-	run_sub_cmd("list note -d", True, 
-	"note_exist_1|notebook_exist|\n"\
-	"note_exist_2|notebook_exist|\n"\
-	"note_exist_3|notebook_exist|\n"\
-	)
-	run_sub_cmd("list notebook", True, 
-	"default notebook\n"\
-	"notebook_exist\n"\
-	)
+		run_cmd("touch note_exist_1 note_exist_2 note_exist_3", True)
+		run_cmd("touch note_new_1 note_new_2 note_new_3", True)
+		# add -n without -f, all notes are not in notespace
+		run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
+		run_sub_cmd("list note -d", True, 
+		"note_exist_1|notebook_exist|\n"\
+		"note_exist_2|notebook_exist|\n"\
+		"note_exist_3|notebook_exist|\n"\
+		)
+		# add -n without -f
+		# 1. all notes are in notespace
+		# 2. new notebook specified
+		run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
+		run_sub_cmd("list note -d", True, 
+		"note_exist_1|notebook_exist|\n"\
+		"note_exist_2|notebook_exist|\n"\
+		"note_exist_3|notebook_exist|\n"\
+		)
+		run_sub_cmd("list notebook", True, 
+		"default notebook\n"\
+		"notebook_exist\n"\
+		)
 
-	# add -n without -f
-	# 1. just 1 note are not in notespace, but didn't exist in directory
-	# 2. new notebook specified
-	run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
-	run_sub_cmd("list note -d", True,
-	"note_exist_1|notebook_exist|\n"\
-	"note_exist_2|notebook_exist|\n"\
-	"note_exist_3|notebook_exist|\n"\
-	)
-	run_sub_cmd("list notebook", True, 
-	"default notebook\n"\
-	"notebook_exist\n"\
-	)
+		# add -n without -f
+		# 1. just 1 note are not in notespace, but didn't exist in directory
+		# 2. new notebook specified
+		run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
+		run_sub_cmd("list note -d", True,
+		"note_exist_1|notebook_exist|\n"\
+		"note_exist_2|notebook_exist|\n"\
+		"note_exist_3|notebook_exist|\n"\
+		)
+		run_sub_cmd("list notebook", True, 
+		"default notebook\n"\
+		"notebook_exist\n"\
+		)
 
-	# add -n without -f
-	# 1. just 1 note are not in notespace
-	# 2. new notebook specified
-	run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
-	run_sub_cmd("list note -d", True,
-	"note_exist_1|notebook_exist|\n"\
-	"note_exist_2|notebook_exist|\n"\
-	"note_exist_3|notebook_exist|\n"\
-	"note_new_1|new_notebook|\n"\
-	)
-	run_sub_cmd("list notebook", True, 
-	"default notebook\n"\
-	"notebook_exist\n"\
-	"new_notebook\n"\
-	)
+		# add -n without -f
+		# 1. just 1 note are not in notespace
+		# 2. new notebook specified
+		run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
+		run_sub_cmd("list note -d", True,
+		"note_exist_1|notebook_exist|\n"\
+		"note_exist_2|notebook_exist|\n"\
+		"note_exist_3|notebook_exist|\n"\
+		"note_new_1|new_notebook|\n"\
+		)
+		run_sub_cmd("list notebook", True, 
+		"default notebook\n"\
+		"notebook_exist\n"\
+		"new_notebook\n"\
+		)
 
-	# add -n -f
-	# 1. just 1 note are not in notespace
-	run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
-	run_sub_cmd("list note -d", True,
-	"note_exist_1|new_notebook|\n"\
-	"note_exist_2|new_notebook|\n"\
-	"note_exist_3|new_notebook|\n"\
-	"note_new_1|new_notebook|\n"\
-	"note_new_2|new_notebook|\n"\
-	)
+		# add -n -f
+		# 1. just 1 note are not in notespace
+		run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
+		run_sub_cmd("list note -d", True,
+		"note_exist_1|new_notebook|\n"\
+		"note_exist_2|new_notebook|\n"\
+		"note_exist_3|new_notebook|\n"\
+		"note_new_1|new_notebook|\n"\
+		"note_new_2|new_notebook|\n"\
+		)
 
-	# add -n -f
-	# 1. just 1 note are not in notespace, but not exist
-	# 2. new notebook specified
-	run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
-	run_sub_cmd("list note -d", True,
-	"note_exist_1|new_notebook_2|\n"\
-	"note_exist_2|new_notebook|\n"\
-	"note_exist_3|new_notebook|\n"\
-	"note_new_1|new_notebook|\n"\
-	"note_new_2|new_notebook|\n"\
-	)
+		# add -n -f
+		# 1. just 1 note are not in notespace, but not exist
+		# 2. new notebook specified
+		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
+		run_sub_cmd("list note -d", True,
+		"note_exist_1|new_notebook_2|\n"\
+		"note_exist_2|new_notebook|\n"\
+		"note_exist_3|new_notebook|\n"\
+		"note_new_1|new_notebook|\n"\
+		"note_new_2|new_notebook|\n"\
+		)
 
-	# add -n -f
-	# 1. just 1 note are not in notespace
-	# 2. new notebook specified
-	run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
-	run_sub_cmd("list note -d", True,
-	"note_exist_1|new_notebook_2|\n"\
-	"note_exist_2|new_notebook|\n"\
-	"note_exist_3|new_notebook|\n"\
-	"note_new_1|new_notebook|\n"\
-	"note_new_2|new_notebook|\n"\
-	"note_new_3|new_notebook_2|\n"\
-	)
+		# add -n -f
+		# 1. just 1 note are not in notespace
+		# 2. new notebook specified
+		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
+		run_sub_cmd("list note -d", True,
+		"note_exist_1|new_notebook_2|\n"\
+		"note_exist_2|new_notebook|\n"\
+		"note_exist_3|new_notebook|\n"\
+		"note_new_1|new_notebook|\n"\
+		"note_new_2|new_notebook|\n"\
+		"note_new_3|new_notebook_2|\n"\
+		)
 
-	run_cmd("rm -rf ./* .mdnote", False)
+	if "add note -t" in targets:
+		init_notespace(is_server)
+		run_cmd("touch note1 note2 note3 note4", True)
 
-	# common test
-	os.makedirs("sub_dir")
+		run_sub_cmd("add note -t tag1 note1 note2", True)
+		run_sub_cmd("list note -d", True,
+		"note1|default notebook|tag1;\n"\
+		"note2|default notebook|tag1;\n"\
+		)
+		
+		# without -f
+		run_sub_cmd("add note -t tag2 note1 note2", True)
+		run_sub_cmd("list note -d", True,
+		"note1|default notebook|tag1;tag2;\n"\
+		"note2|default notebook|tag1;tag2;\n"\
+		)
 
-	for i in range(3):
-		run_cmd("touch default_" + str(i), False)
+		# with -f
+		run_sub_cmd("add note -f -t tag2 note1 note3", True)
+		run_sub_cmd("list note -d", True,
+		"note1|default notebook|tag2;\n"\
+		"note2|default notebook|tag1;tag2;\n"\
+		"note3|default notebook|tag2;\n"\
+		)
+		
+		# not exist file
+		run_sub_cmd("add note note4", True)
+		run_sub_cmd("add note -f -t tag3 not_exist", True)
+		run_sub_cmd("list note -d", True,
+		"note1|default notebook|tag2;\n"\
+		"note2|default notebook|tag1;tag2;\n"\
+		"note3|default notebook|tag2;\n"\
+		"note4|default notebook|\n"\
+		)
+		run_sub_cmd("list tag", True,
+		"tag1\n"\
+		"tag2\n"\
+		)
+	
+	if "general" in targets:
+		init_notespace(is_server)
+		# common test
+		os.makedirs("sub_dir")
 
-	for notebook_idx in range(notebook_count):
-		for note_idx in range(note_per_notebook):
-			run_cmd("touch notebook_" + str(notebook_idx) + "_" + str(note_idx), False)
+		for i in range(3):
+			run_cmd("touch default_" + str(i), False)
 
-	run_sub_cmd('init ' + os.getcwd(), True)
-	if is_server:
-		run_sub_cmd('open ' + os.getcwd(), True)
+		for notebook_idx in range(notebook_count):
+			for note_idx in range(note_per_notebook):
+				run_cmd("touch notebook_" + str(notebook_idx) + "_" + str(note_idx), False)
 
-	# not specified notes
-	run_sub_cmd('add note -n notebook1', True, 2)
+		run_sub_cmd('init ' + os.getcwd(), True)
+		if is_server:
+			run_sub_cmd('open ' + os.getcwd(), True)
 
-	# not existed file
-	run_sub_cmd('add note not_existed', True)
+		# not specified notes
+		run_sub_cmd('add note -n notebook1', True, 2)
 
-	# different path
-	run_sub_cmd('add note default_0', True)
-	run_sub_cmd('add note ./default_1', True)
-	run_sub_cmd('add note ' + os.path.abspath("default_2"), True)
+		# not existed file
+		run_sub_cmd('add note not_existed', True)
 
-	# sub directory
-	run_cmd('touch sub_dir/sub0 sub_dir/sub1 sub_dir/sub2', False)
-	run_sub_cmd('add note sub_dir/sub0', True)
-	run_sub_cmd('add note ./sub_dir/sub1', True)
-	run_sub_cmd('add note ' + os.path.abspath("sub_dir/sub2"), True)
-	run_sub_cmd('list note -d', True, 
-	"default_0|default notebook|\n"\
-	"default_1|default notebook|\n"\
-	"default_2|default notebook|\n"\
-	"sub_dir/sub0|default notebook|\n"\
-	"sub_dir/sub1|default notebook|\n"\
-	"sub_dir/sub2|default notebook|\n"\
-	)
+		# different path
+		run_sub_cmd('add note default_0', True)
+		run_sub_cmd('add note ./default_1', True)
+		run_sub_cmd('add note ' + os.path.abspath("default_2"), True)
 
-	run_sub_cmd('add note -t default1 default_1', True)
-	run_sub_cmd('add note -t default1 default_2', True)
-	run_sub_cmd('add note -t default2 default_1', True)
+		# sub directory
+		run_cmd('touch sub_dir/sub0 sub_dir/sub1 sub_dir/sub2', False)
+		run_sub_cmd('add note sub_dir/sub0', True)
+		run_sub_cmd('add note ./sub_dir/sub1', True)
+		run_sub_cmd('add note ' + os.path.abspath("sub_dir/sub2"), True)
+		run_sub_cmd('list note -d', True, 
+		"default_0|default notebook|\n"\
+		"default_1|default notebook|\n"\
+		"default_2|default notebook|\n"\
+		"sub_dir/sub0|default notebook|\n"\
+		"sub_dir/sub1|default notebook|\n"\
+		"sub_dir/sub2|default notebook|\n"\
+		)
 
-	# add notes
-	run_sub_cmd('add note -n notebook_0 notebook_0_0 notebook_0_2 notebook_0_1', True)
-	run_sub_cmd('add note -n notebook_1 notebook_1_1 notebook_1_0 notebook_1_2', True)
-	run_sub_cmd('add note -n notebook_1 -t "default1" notebook_1_1', True)
-	run_sub_cmd('add note -n notebook_1 -t "default1; default2" notebook_1_2', True)
+		run_sub_cmd('add note -t default1 default_1', True)
+		run_sub_cmd('add note -t default1 default_2', True)
+		run_sub_cmd('add note -t default2 default_1', True)
 
-	run_sub_cmd('list note', True,
-	"default_0\n"\
-	"default_1\n"\
-	"default_2\n"\
-	"sub_dir/sub0\n"\
-	"sub_dir/sub1\n"\
-	"sub_dir/sub2\n"\
-	"notebook_0_0\n"\
-	"notebook_0_2\n"\
-	"notebook_0_1\n"\
-	"notebook_1_1\n"\
-	"notebook_1_0\n"\
-	"notebook_1_2\n"\
-	)
-	run_sub_cmd('list note -d', True,
-	"default_0|default notebook|\n"\
-	"default_1|default notebook|default1;default2;\n"\
-	"default_2|default notebook|default1;\n"\
-	"sub_dir/sub0|default notebook|\n"\
-	"sub_dir/sub1|default notebook|\n"\
-	"sub_dir/sub2|default notebook|\n"\
-	"notebook_0_0|notebook_0|\n"\
-	"notebook_0_2|notebook_0|\n"\
-	"notebook_0_1|notebook_0|\n"\
-	"notebook_1_1|notebook_1|default1;\n"\
-	"notebook_1_0|notebook_1|\n"\
-	"notebook_1_2|notebook_1|default1;default2;\n"\
-	)
+		# add notes
+		run_sub_cmd('add note -n notebook_0 notebook_0_0 notebook_0_2 notebook_0_1', True)
+		run_sub_cmd('add note -n notebook_1 notebook_1_1 notebook_1_0 notebook_1_2', True)
+		run_sub_cmd('add note -n notebook_1 -t "default1" notebook_1_1', True)
+		run_sub_cmd('add note -n notebook_1 -t "default1; default2" notebook_1_2', True)
 
-	run_sub_cmd('list note -n notebook_1', True,
-	"notebook_1_1\n"\
-	"notebook_1_0\n"\
-	"notebook_1_2\n"\
-	)
-	run_sub_cmd('list note -n "default notebook"', True,
-	"default_0\n"\
-	"default_1\n"\
-	"default_2\n"\
-	"sub_dir/sub0\n"\
-	"sub_dir/sub1\n"\
-	"sub_dir/sub2\n"\
-	)
-	run_sub_cmd('list note -t default1', True, 
-	"default_1\n"\
-	"default_2\n"\
-	"notebook_1_1\n"\
-	"notebook_1_2\n"\
-	) 
-	run_sub_cmd('list note -t "default1; default2"', True, 
-	"default_1\n"\
-	"notebook_1_2\n"\
-	) 
-	run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True,
-	"notebook_1_2|notebook_1|default1;default2;\n") 
+		run_sub_cmd('list note', True,
+		"default_0\n"\
+		"default_1\n"\
+		"default_2\n"\
+		"sub_dir/sub0\n"\
+		"sub_dir/sub1\n"\
+		"sub_dir/sub2\n"\
+		"notebook_0_0\n"\
+		"notebook_0_2\n"\
+		"notebook_0_1\n"\
+		"notebook_1_1\n"\
+		"notebook_1_0\n"\
+		"notebook_1_2\n"\
+		)
+		run_sub_cmd('list note -d', True,
+		"default_0|default notebook|\n"\
+		"default_1|default notebook|default1;default2;\n"\
+		"default_2|default notebook|default1;\n"\
+		"sub_dir/sub0|default notebook|\n"\
+		"sub_dir/sub1|default notebook|\n"\
+		"sub_dir/sub2|default notebook|\n"\
+		"notebook_0_0|notebook_0|\n"\
+		"notebook_0_2|notebook_0|\n"\
+		"notebook_0_1|notebook_0|\n"\
+		"notebook_1_1|notebook_1|default1;\n"\
+		"notebook_1_0|notebook_1|\n"\
+		"notebook_1_2|notebook_1|default1;default2;\n"\
+		)
+
+		run_sub_cmd('list note -n notebook_1', True,
+		"notebook_1_1\n"\
+		"notebook_1_0\n"\
+		"notebook_1_2\n"\
+		)
+		run_sub_cmd('list note -n "default notebook"', True,
+		"default_0\n"\
+		"default_1\n"\
+		"default_2\n"\
+		"sub_dir/sub0\n"\
+		"sub_dir/sub1\n"\
+		"sub_dir/sub2\n"\
+		)
+		run_sub_cmd('list note -t default1', True, 
+		"default_1\n"\
+		"default_2\n"\
+		"notebook_1_1\n"\
+		"notebook_1_2\n"\
+		) 
+		run_sub_cmd('list note -t "default1; default2"', True, 
+		"default_1\n"\
+		"notebook_1_2\n"\
+		) 
+		run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True,
+		"notebook_1_2|notebook_1|default1;default2;\n") 
 
 
-	run_sub_cmd('list note -n not_exsit_nb', True, 4)
+		run_sub_cmd('list note -n not_exsit_nb', True, 4)
 
-	run_sub_cmd('list notebook', True,
-	"default notebook\n"\
-	"notebook_0\n"\
-	"notebook_1\n"\
-	)
+		run_sub_cmd('list notebook', True,
+		"default notebook\n"\
+		"notebook_0\n"\
+		"notebook_1\n"\
+		)
 
-	run_sub_cmd('list tag', True,
-	"default1\n"\
-	"default2\n"\
-	)
+		run_sub_cmd('list tag', True,
+		"default1\n"\
+		"default2\n"\
+		)
 
 	print "====== Result ========"
 	print "Success:", ok_count
