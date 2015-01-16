@@ -1,6 +1,15 @@
 #!/usr/bin/python
 
 import sys, os, subprocess, re, socket, time
+try:
+	import colorama
+	has_colorama = True
+except:
+	has_colorama = False
+	print "Haven't colorama, printing without color on NOT ANSI color shell"
+	print "You may want to install colorama through: pip install colorama"
+	print ""
+
 
 show_result = True
 
@@ -412,5 +421,7 @@ def run_test_case(is_server):
 	print "   Fail:", fail_count
 
 if __name__ == "__main__":
+	if has_colorama:
+		colorama.init()
 	run_test_case(False)
 	run_test_case(True)
