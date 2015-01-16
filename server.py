@@ -130,6 +130,8 @@ class ServerCommand(object):
 		if not os.path.isabs(path):
 			raise errors.UsageError("open must use absolute path")
 
+		if self.notespace:
+			self.notespace.close
 		self.notespace = Notespace()
 		if not self.notespace.find_notespace(path, up_to_root = False):
 			debug.message(debug.ERROR, "No notespace found")
