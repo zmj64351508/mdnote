@@ -11,7 +11,7 @@ debug_level = DEBUG
 
 def message(level, *args):
 	if level >= debug_level:
-		sys.stdout.write("[" + str(os.getpid()) + "] [" + level_label[level] + "] ")
+		sys.stdout.write("[" + level_label[level] + "] " + "[" + str(os.getpid()) + "] ")
 		for arg in args:
 			sys.stdout.write(arg.__str__())
 		sys.stdout.write("\n")

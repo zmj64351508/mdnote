@@ -106,16 +106,22 @@ class Server(object):
 				pass
 		"""
 
+open_lock = threading.Lock()
+
 class ServerCommand(object):
 	def __init__(self, general_commands):
 		self.commands = {
 			"open":self.do_open,
+			"init":self.do_init,
 			"close":self.do_close,
 		}
 		self.notespace = None
 		self.general_commands = general_commands
 
 	def do_open(self, thread, argc, argv):
+		global open_lock
+		open_lock.acquire()
+
 		if argc <= 1:
 			path = os.getcwd()
 		else:
@@ -127,16 +133,28 @@ class ServerCommand(object):
 		self.notespace = Notespace()
 		if not self.notespace.find_notespace(path, up_to_root = False):
 			debug.message(debug.ERROR, "No notespace found")
+			open_lock.release()
 			return -1
-		else:
-			os.chdir(path)
+
+		open_lock.release()
 		return 0
 
+	def do_init(self, thread, argc, argv):
+		global open_lock
+		open_lock.acquire()
+		if self.notespace:
+			self.notespace.close()
+		self.notespace = Notespace()
+		self.general_commands[argv[0]].server_main(thread, argc, argv)
+		open_lock.release()
+
 	def do_close(self, thread, argc, argv):
-		self.close()
+		thread.stop()
 		return 0
 
 	def close(self):
+		if self.notespace:
+			self.notespace.close()
 		self.notespace = None
 
 	def run_command(self, thread, argc, argv):

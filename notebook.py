@@ -119,6 +119,10 @@ class Database(object):
 			self.tables[name].create()
 		self.connect.commit()
 
+	def close(self):
+		debug.message(debug.DEBUG, "Closing database")
+		self.connect.close()
+
 	def get_connection(self):
 		return self.connect
 
@@ -357,6 +361,9 @@ class Notespace(object):
 	def create_database(self, db_path):
 		self.db = Database(db_path)
 		self.db.create()
+
+	def close(self):
+		self.db.close()
 	
 	def find_notespace(self, from_path, up_to_root = True):
 		notespace_path = None
@@ -587,7 +594,10 @@ class Tag(NoteContainer):
 
 class Note(NoteObject):
 	def __init__(self, notespace, note_path):
-		self.relpath = os.path.relpath(note_path, notespace.get_path())
+		if os.path.isabs(note_path):
+			self.relpath = os.path.relpath(note_path, notespace.get_path())
+		else:
+			self.relpath = note_path
 		self.name = os.path.basename(note_path)
 		super(Note, self).__init__(notespace)
 

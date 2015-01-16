@@ -11,7 +11,21 @@ class Main(CommandGeneral):
 		super(Main, self).__init__()
 		self.notebooks = {}
 
+	def get_notespace(self, server):
+		if server:
+			notespace = server.get_notespace()
+			debug.message(debug.DEBUG, "notespace path is ", notespace.get_path())
+		else:
+			notespace = Notespace()
+		return notespace
+
 	def main(self, argc, argv):
+		self.do_main(None, argc, argv)
+
+	def server_main(self, server, argc, argv):
+		self.do_main(server, argc, argv)
+
+	def do_main(self, server, argc, argv):
 		if argc < 1:
 			self.usage()
 			exit()
@@ -21,7 +35,7 @@ class Main(CommandGeneral):
 			path = "."
 
 		# create notespace first if necessary
-		self.notespace = Notespace()
+		self.notespace = self.get_notespace(server)
 		if not self.notespace.find_notespace(path, up_to_root = False):
 			debug.message(debug.DEBUG, "No notespace found, creating notespace")
 			self.notespace.create(path)
@@ -31,9 +45,6 @@ class Main(CommandGeneral):
 			self.notespace.create_default_notebook()
 		else:
 			debug.message(debug.DEBUG, "Notespace already exists do nothing")
-
-	def server_main(self, server, argc, argv):
-		self.main(argc, argv)
 
 	def usage(self):
 		print "usage: mdnote init"
