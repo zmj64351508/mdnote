@@ -1,13 +1,13 @@
 #!/usr/bin/python
 
-import sys, os, subprocess, re, socket
+import sys, os, subprocess, re, socket, time
 
 show_result = True
 
 ok_count = 0
 fail_count = 0
 
-def run_cmd(command, verbose, expected_result=""):
+def run_cmd(command, verbose, *expected_result):
 	global ok_count
 	global fail_count
 	if verbose:
@@ -19,11 +19,20 @@ def run_cmd(command, verbose, expected_result=""):
 		try:
 			output = subprocess.check_output(command, shell=True)
 			match = re.findall(r'^[^(\[DEBUG\])].*$', output, re.M)
-			#for a in match:
-			result = ""
-			for line in match:
-				result += line + '\n'
-			if cmp(result, expected_result) == 0:
+
+			# if running on Windows, each line is ended by a '\r'
+			i = 0
+			while i < len(match):
+				if match[i][-1] == '\r':
+					match[i] = match[i][:-1]
+				i += 1
+
+			print "##################"
+			print match
+			print "##################"
+			print expected_result
+			print "##################"
+			if cmp(tuple(match), expected_result) == 0:
 				ok_count += 1
 				print "\033[0;32mOK\033[0m"
 			else:
@@ -31,7 +40,7 @@ def run_cmd(command, verbose, expected_result=""):
 				print "\033[0;31mFail\033[0m"
 		except subprocess.CalledProcessError as e:
 			#print "return code is ", e.returncode, "expected is ", int(expected_result)
-			if int(e.returncode) == expected_result:
+			if int(e.returncode) == expected_result[0]:
 				ok_count += 1
 				print "\033[0;32mOK\033[0m"
 			else:
@@ -41,10 +50,10 @@ def run_cmd(command, verbose, expected_result=""):
 	else:
 		os.system(command + "> /dev/null")
 
-def run_sub_cmd_noserver(sub_command, verbose, expected_result=""):
-	run_cmd(os.path.join(os.pardir, "mdnote.py ") + sub_command, verbose, expected_result)
+def run_sub_cmd_noserver(sub_command, verbose, *expected_result):
+	run_cmd(os.path.join(os.pardir, "mdnote.py ") + sub_command, verbose, *expected_result)
 
-def run_sub_cmd_server(sub_command, verbose, expected_result=""):
+def run_sub_cmd_server(sub_command, verbose, *expected_result):
 	global ok_count
 	global fail_count
 	global con
@@ -59,6 +68,7 @@ def run_sub_cmd_server(sub_command, verbose, expected_result=""):
 	while 1:
 		data = con.recv(1024)
 		if not data:
+			print "Connection broken"
 			exit()
 		sys.stdout.write(data)
 		buf += data
@@ -71,7 +81,7 @@ def run_sub_cmd_server(sub_command, verbose, expected_result=""):
 		if cmp(retval, "None") == 0:
 			pass
 		elif int(retval) != 0:
-			if int(retval) == expected_result:
+			if int(retval) == expected_result[0]:
 				ok_count += 1
 				print "\033[0;32mOK\033[0m"
 			else:
@@ -79,14 +89,8 @@ def run_sub_cmd_server(sub_command, verbose, expected_result=""):
 				print "\033[0;31mFail\033[0m"
 			return
 		output = output[:-1]
-		result = ""
-		for line in output:
-			result += line + "\n"
 
-		print "##############################"
-		print result
-		print "##############################"
-		if cmp(result, expected_result) == 0:
+		if cmp(tuple(output), expected_result) == 0:
 			ok_count += 1
 			print "\033[0;32mOK\033[0m"
 		else:
@@ -106,15 +110,40 @@ targets = [
 	"general"
 ]
 
+def remove(src):
+	'''delete files and folders'''
+	if os.path.isfile(src):
+		os.remove(src)
+	elif os.path.isdir(src):
+		for item in os.listdir(src):
+			itemsrc=os.path.join(src,item)
+			remove(itemsrc) 
+		os.rmdir(src)
+
+def create_empty_files(*file_names):
+	for file_name in file_names:
+		f = open(file_name, "w")
+		f.close()
+
 def init_notespace(is_server):
+	global con
+	if is_server:
+		try:
+			con.close()
+		except Exception:
+			pass
+
 	os.chdir(start_dir)
-	run_cmd("rm -rf " + test_dir, False)
+	# wait for a while, otherwise we may not able to delete the directory
+	time.sleep(0.5)
+	remove(test_dir)
 	os.makedirs(test_dir)
 	os.chdir(test_dir)
 
-	run_sub_cmd("init " + os.getcwd(), True)
 	if is_server:
-		run_sub_cmd('open ' + os.getcwd(), True)
+		con = socket.socket()
+		con.connect(("localhost", 46000))
+	run_sub_cmd("init " + os.getcwd(), True)
 
 def run_test_case(is_server):
 	global ok_count
@@ -125,34 +154,33 @@ def run_test_case(is_server):
 		#run_sub_cmd("server", False)
 		global con
 		con = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		con.connect(("127.0.0.1", 46000))
 	else:
 		run_sub_cmd = run_sub_cmd_noserver
 
 	if "add note -n" in targets:
 		init_notespace(is_server)
 
-		run_cmd("touch note_exist_1 note_exist_2 note_exist_3", True)
-		run_cmd("touch note_new_1 note_new_2 note_new_3", True)
+		create_empty_files("note_exist_1", "note_exist_2", "note_exist_3")
+		create_empty_files("note_new_1", "note_new_2", "note_new_3")
 		# add -n without -f, all notes are not in notespace
 		run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, 
-		"note_exist_1|notebook_exist|\n"\
-		"note_exist_2|notebook_exist|\n"\
-		"note_exist_3|notebook_exist|\n"\
+		"note_exist_1|notebook_exist|",
+		"note_exist_2|notebook_exist|",
+		"note_exist_3|notebook_exist|",
 		)
 		# add -n without -f
 		# 1. all notes are in notespace
 		# 2. new notebook specified
 		run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, 
-		"note_exist_1|notebook_exist|\n"\
-		"note_exist_2|notebook_exist|\n"\
-		"note_exist_3|notebook_exist|\n"\
+		"note_exist_1|notebook_exist|",
+		"note_exist_2|notebook_exist|",
+		"note_exist_3|notebook_exist|",
 		)
 		run_sub_cmd("list notebook", True, 
-		"default notebook\n"\
-		"notebook_exist\n"\
+		"default notebook",
+		"notebook_exist",
 		)
 
 		# add -n without -f
@@ -160,13 +188,13 @@ def run_test_case(is_server):
 		# 2. new notebook specified
 		run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True,
-		"note_exist_1|notebook_exist|\n"\
-		"note_exist_2|notebook_exist|\n"\
-		"note_exist_3|notebook_exist|\n"\
+		"note_exist_1|notebook_exist|",
+		"note_exist_2|notebook_exist|",
+		"note_exist_3|notebook_exist|",
 		)
 		run_sub_cmd("list notebook", True, 
-		"default notebook\n"\
-		"notebook_exist\n"\
+		"default notebook",
+		"notebook_exist",
 		)
 
 		# add -n without -f
@@ -174,26 +202,26 @@ def run_test_case(is_server):
 		# 2. new notebook specified
 		run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True,
-		"note_exist_1|notebook_exist|\n"\
-		"note_exist_2|notebook_exist|\n"\
-		"note_exist_3|notebook_exist|\n"\
-		"note_new_1|new_notebook|\n"\
+		"note_exist_1|notebook_exist|",
+		"note_exist_2|notebook_exist|",
+		"note_exist_3|notebook_exist|",
+		"note_new_1|new_notebook|",
 		)
 		run_sub_cmd("list notebook", True, 
-		"default notebook\n"\
-		"notebook_exist\n"\
-		"new_notebook\n"\
+		"default notebook",
+		"notebook_exist",
+		"new_notebook",
 		)
 
 		# add -n -f
 		# 1. just 1 note are not in notespace
 		run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
 		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook|\n"\
-		"note_exist_2|new_notebook|\n"\
-		"note_exist_3|new_notebook|\n"\
-		"note_new_1|new_notebook|\n"\
-		"note_new_2|new_notebook|\n"\
+		"note_exist_1|new_notebook|",
+		"note_exist_2|new_notebook|",
+		"note_exist_3|new_notebook|",
+		"note_new_1|new_notebook|",
+		"note_new_2|new_notebook|",
 		)
 
 		# add -n -f
@@ -201,11 +229,11 @@ def run_test_case(is_server):
 		# 2. new notebook specified
 		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
 		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook_2|\n"\
-		"note_exist_2|new_notebook|\n"\
-		"note_exist_3|new_notebook|\n"\
-		"note_new_1|new_notebook|\n"\
-		"note_new_2|new_notebook|\n"\
+		"note_exist_1|new_notebook_2|",
+		"note_exist_2|new_notebook|",
+		"note_exist_3|new_notebook|",
+		"note_new_1|new_notebook|",
+		"note_new_2|new_notebook|",
 		)
 
 		# add -n -f
@@ -213,51 +241,51 @@ def run_test_case(is_server):
 		# 2. new notebook specified
 		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
 		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook_2|\n"\
-		"note_exist_2|new_notebook|\n"\
-		"note_exist_3|new_notebook|\n"\
-		"note_new_1|new_notebook|\n"\
-		"note_new_2|new_notebook|\n"\
-		"note_new_3|new_notebook_2|\n"\
+		"note_exist_1|new_notebook_2|",
+		"note_exist_2|new_notebook|",
+		"note_exist_3|new_notebook|",
+		"note_new_1|new_notebook|",
+		"note_new_2|new_notebook|",
+		"note_new_3|new_notebook_2|",
 		)
 
 	if "add note -t" in targets:
 		init_notespace(is_server)
-		run_cmd("touch note1 note2 note3 note4", True)
+		create_empty_files("note1", "note2", "note3", "note4")
 
 		run_sub_cmd("add note -t tag1 note1 note2", True)
 		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag1;\n"\
-		"note2|default notebook|tag1;\n"\
+		"note1|default notebook|tag1;",
+		"note2|default notebook|tag1;",
 		)
 		
 		# without -f
 		run_sub_cmd("add note -t tag2 note1 note2", True)
 		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag1;tag2;\n"\
-		"note2|default notebook|tag1;tag2;\n"\
+		"note1|default notebook|tag1;tag2;",
+		"note2|default notebook|tag1;tag2;",
 		)
 
 		# with -f
 		run_sub_cmd("add note -f -t tag2 note1 note3", True)
 		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag2;\n"\
-		"note2|default notebook|tag1;tag2;\n"\
-		"note3|default notebook|tag2;\n"\
+		"note1|default notebook|tag2;",
+		"note2|default notebook|tag1;tag2;",
+		"note3|default notebook|tag2;",
 		)
 		
 		# not exist file
 		run_sub_cmd("add note note4", True)
 		run_sub_cmd("add note -f -t tag3 not_exist", True)
 		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag2;\n"\
-		"note2|default notebook|tag1;tag2;\n"\
-		"note3|default notebook|tag2;\n"\
-		"note4|default notebook|\n"\
+		"note1|default notebook|tag2;",
+		"note2|default notebook|tag1;tag2;",
+		"note3|default notebook|tag2;",
+		"note4|default notebook|",
 		)
 		run_sub_cmd("list tag", True,
-		"tag1\n"\
-		"tag2\n"\
+		"tag1",
+		"tag2",
 		)
 	
 	if "general" in targets:
@@ -266,15 +294,13 @@ def run_test_case(is_server):
 		os.makedirs("sub_dir")
 
 		for i in range(3):
-			run_cmd("touch default_" + str(i), False)
+			create_empty_files("default_" + str(i))
 
 		for notebook_idx in range(notebook_count):
 			for note_idx in range(note_per_notebook):
-				run_cmd("touch notebook_" + str(notebook_idx) + "_" + str(note_idx), False)
+				create_empty_files("notebook_" + str(notebook_idx) + "_" + str(note_idx))
 
 		run_sub_cmd('init ' + os.getcwd(), True)
-		if is_server:
-			run_sub_cmd('open ' + os.getcwd(), True)
 
 		# not specified notes
 		run_sub_cmd('add note -n notebook1', True, 2)
@@ -288,17 +314,17 @@ def run_test_case(is_server):
 		run_sub_cmd('add note ' + os.path.abspath("default_2"), True)
 
 		# sub directory
-		run_cmd('touch sub_dir/sub0 sub_dir/sub1 sub_dir/sub2', False)
+		create_empty_files("sub_dir/sub0", "sub_dir/sub1", "sub_dir/sub2")
 		run_sub_cmd('add note sub_dir/sub0', True)
 		run_sub_cmd('add note ./sub_dir/sub1', True)
 		run_sub_cmd('add note ' + os.path.abspath("sub_dir/sub2"), True)
 		run_sub_cmd('list note -d', True, 
-		"default_0|default notebook|\n"\
-		"default_1|default notebook|\n"\
-		"default_2|default notebook|\n"\
-		"sub_dir/sub0|default notebook|\n"\
-		"sub_dir/sub1|default notebook|\n"\
-		"sub_dir/sub2|default notebook|\n"\
+		"default_0|default notebook|",
+		"default_1|default notebook|",
+		"default_2|default notebook|",
+		os.path.normpath("sub_dir/sub0")+"|default notebook|",
+		os.path.normpath("sub_dir/sub1")+"|default notebook|",
+		os.path.normpath("sub_dir/sub2")+"|default notebook|",
 		)
 
 		run_sub_cmd('add note -t default1 default_1', True)
@@ -312,72 +338,73 @@ def run_test_case(is_server):
 		run_sub_cmd('add note -n notebook_1 -t "default1; default2" notebook_1_2', True)
 
 		run_sub_cmd('list note', True,
-		"default_0\n"\
-		"default_1\n"\
-		"default_2\n"\
-		"sub_dir/sub0\n"\
-		"sub_dir/sub1\n"\
-		"sub_dir/sub2\n"\
-		"notebook_0_0\n"\
-		"notebook_0_2\n"\
-		"notebook_0_1\n"\
-		"notebook_1_1\n"\
-		"notebook_1_0\n"\
-		"notebook_1_2\n"\
+		"default_0",
+		"default_1",
+		"default_2",
+		os.path.normpath("sub_dir/sub0"),
+		os.path.normpath("sub_dir/sub1"),
+		os.path.normpath("sub_dir/sub2"),
+		"notebook_0_0",
+		"notebook_0_2",
+		"notebook_0_1",
+		"notebook_1_1",
+		"notebook_1_0",
+		"notebook_1_2",
 		)
 		run_sub_cmd('list note -d', True,
-		"default_0|default notebook|\n"\
-		"default_1|default notebook|default1;default2;\n"\
-		"default_2|default notebook|default1;\n"\
-		"sub_dir/sub0|default notebook|\n"\
-		"sub_dir/sub1|default notebook|\n"\
-		"sub_dir/sub2|default notebook|\n"\
-		"notebook_0_0|notebook_0|\n"\
-		"notebook_0_2|notebook_0|\n"\
-		"notebook_0_1|notebook_0|\n"\
-		"notebook_1_1|notebook_1|default1;\n"\
-		"notebook_1_0|notebook_1|\n"\
-		"notebook_1_2|notebook_1|default1;default2;\n"\
+		"default_0|default notebook|",
+		"default_1|default notebook|default1;default2;",
+		"default_2|default notebook|default1;",
+		os.path.normpath("sub_dir/sub0")+"|default notebook|",
+		os.path.normpath("sub_dir/sub1")+"|default notebook|",
+		os.path.normpath("sub_dir/sub2")+"|default notebook|",
+		"notebook_0_0|notebook_0|",
+		"notebook_0_2|notebook_0|",
+		"notebook_0_1|notebook_0|",
+		"notebook_1_1|notebook_1|default1;",
+		"notebook_1_0|notebook_1|",
+		"notebook_1_2|notebook_1|default1;default2;",
 		)
 
 		run_sub_cmd('list note -n notebook_1', True,
-		"notebook_1_1\n"\
-		"notebook_1_0\n"\
-		"notebook_1_2\n"\
+		"notebook_1_1",
+		"notebook_1_0",
+		"notebook_1_2",
 		)
 		run_sub_cmd('list note -n "default notebook"', True,
-		"default_0\n"\
-		"default_1\n"\
-		"default_2\n"\
-		"sub_dir/sub0\n"\
-		"sub_dir/sub1\n"\
-		"sub_dir/sub2\n"\
+		"default_0",
+		"default_1",
+		"default_2",
+		os.path.normpath("sub_dir/sub0"),
+		os.path.normpath("sub_dir/sub1"),
+		os.path.normpath("sub_dir/sub2"),
 		)
 		run_sub_cmd('list note -t default1', True, 
-		"default_1\n"\
-		"default_2\n"\
-		"notebook_1_1\n"\
-		"notebook_1_2\n"\
+		"default_1",
+		"default_2",
+		"notebook_1_1",
+		"notebook_1_2",
 		) 
 		run_sub_cmd('list note -t "default1; default2"', True, 
-		"default_1\n"\
-		"notebook_1_2\n"\
+		"default_1",
+		"notebook_1_2",
 		) 
 		run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True,
-		"notebook_1_2|notebook_1|default1;default2;\n") 
+		"notebook_1_2|notebook_1|default1;default2;",
+		) 
 
 
 		run_sub_cmd('list note -n not_exsit_nb', True, 4)
 
 		run_sub_cmd('list notebook', True,
-		"default notebook\n"\
-		"notebook_0\n"\
-		"notebook_1\n"\
+		"default notebook",
+		"notebook_0",
+		"notebook_1",
 		)
 
 		run_sub_cmd('list tag', True,
-		"default1\n"\
-		"default2\n"\
+		"default1",
+		"default2",
 		)
 
 	print "====== Result ========"
