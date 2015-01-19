@@ -124,6 +124,7 @@ con = None
 targets = [
 	"add note -n",
 	"add note -t",
+	"list note"
 	"general"
 ]
 
@@ -314,6 +315,44 @@ def run_test_case(is_server):
 		run_sub_cmd("list tag", True,
 		"tag1",
 		"tag2",
+		)
+	
+	if "list note" in targets:
+		init_notespace(is_server)
+		os.mkdir("sub_dir")
+		create_empty_files("note1", "note2", "note3", "note4", "except_note", "sub_dir/sub1", "sub_dir/sub2")
+		run_sub_cmd('add note -n notebook1 note1 note2 except_note', True)
+		run_sub_cmd('add note -t tag1 note1 note3', True)
+		run_sub_cmd('add note -n notebook2 -t tag2 note4 sub_dir/sub1', True)
+		run_sub_cmd('add note -n notebook2 -t "tag2;tag3" sub_dir/sub2', True)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note1", "notebook":"notebook1", "tag":"tag1;"},
+			{"path":"note2", "notebook":"notebook1", "tag":""},
+			{"path":"except_note", "notebook":"notebook1", "tag":""},
+			{"path":"note3", "notebook":"default notebook", "tag":"tag1;"},
+			{"path":"note4", "notebook":"notebook2", "tag":"tag2;"},
+			{"path":"sub_dir/sub1", "notebook":"notebook2", "tag":"tag2;"},
+			{"path":"sub_dir/sub2", "notebook":"notebook2", "tag":"tag2;tag3;"},
+		))
+		run_sub_cmd("list note -n notebook1", True, 
+			"note1",
+			"note2",
+			"except_note"
+		)
+		run_sub_cmd("list note -n notebook1 note*", True, 
+			"note1",
+			"note2",
+		)
+		run_sub_cmd("list note sub_dir/*", True,
+			"sub_dir/sub1",
+			"sub_dir/sub2",
+		)
+		run_sub_cmd("list note " + os.path.abspath("note1"), True,
+			"note1",
+		)
+		run_sub_cmd("list note ./note1 ../test_dir/note2" , True,
+			"note1",
+			"note2",
 		)
 	
 	if "general" in targets:
