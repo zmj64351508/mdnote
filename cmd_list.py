@@ -1,6 +1,6 @@
 import os, sys
 import getopt
-import glob
+import glob, time
 
 import debug
 import errors
@@ -153,7 +153,14 @@ class NoteTarget(CommandGeneral):
 				for tag in detail["tag"]:
 					if tag:
 						self.output_result(server, tag.__str__()+";")
-				self.output_result(server, "\n \n")
+				self.output_result(server, "\n")
+				if server:
+					self.output_result(server, "CREATE TIME: " + str(detail["create_time"]) + "\n")
+					self.output_result(server, "MODIFY TIME: " + str(detail["modify_time"]) + "\n")
+				else:
+					self.output_result(server, "CREATE TIME: " + time.ctime(detail["create_time"]) + "\n")
+					self.output_result(server, "MODIFY TIME: " + time.ctime(detail["modify_time"]) + "\n")
+				self.output_result(server, " \n")
 		else:
 			for detail in result:
 				self.output_result(server, detail["path"].__str__() + "\n")

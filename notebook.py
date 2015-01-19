@@ -1,5 +1,5 @@
 import sqlite3
-import os
+import os, time
 import errors
 import debug
 
@@ -57,17 +57,19 @@ class NoteTable(DatabaseTable):
 		self.connect.execute("CREATE TABLE IF NOT EXISTS " + self.name + """ (
 				id integer primary key autoincrement, 
 				path varchar(10),
-				nb_id integer
+				nb_id integer,
+				create_time integer
 			)""")
 
-	def insert(self, n_path, nb_id):
-		self.connect.execute("INSERT INTO note VALUES(null, '" + n_path + "', " + str(nb_id) + ")")
+	def insert(self, n_path, nb_id, create_time):
+		self.connect.execute("INSERT INTO note VALUES(null, '" + n_path + "', " + str(nb_id) + "," + 
+				     str(create_time) + ")")
 
-	def insert_note(self, note, notebook):
+	def insert_note(self, note, notebook, create_time):
 		if type(note) != Note:
 			raise TypeError
 		debug.message(debug.DEBUG, "Inserting " + note.get_relpath() + " to database")
-		self.insert(note.get_relpath(), notebook.get_id())
+		self.insert(note.get_relpath(), notebook.get_id(), create_time)
 		#self.connect.execute("INSERT INTO note VALUES(null, '" + note.get_relpath() + "', null, null)")
 		cursor = self.select("id", "WHERE path='" + note.get_relpath() + "'")
 		n_id = cursor.next()[0]
@@ -137,7 +139,9 @@ class Database(object):
 			record = cu.next()
 			n_id = record[0]
 		except StopIteration:
-			n_id = note_table.insert_note(note, notebook)
+			current_time = time.time()
+			os.utime(note.get_abspath(), (current_time, current_time))
+			n_id = note_table.insert_note(note, notebook, current_time)
 		note.set_id(n_id)
 
 	def update_note(self, note, notebook):
@@ -186,7 +190,8 @@ class Database(object):
 
 	def get_notes_command(self, where):
 		return self.connect.execute("""
-				SELECT note.id, note.path, notebook.name, tag.id, tag.name from note 
+				SELECT note.id, note.path, notebook.name, tag.id, tag.name, note.create_time
+				from note 
 				LEFT JOIN notebook
 				ON note.nb_id=notebook.id
 				LEFT JOIN note_vs_tag AS nvt
@@ -277,7 +282,12 @@ class Database(object):
 				notes_detail[-1]["tag"].append(row[4])
 			# new note record
 			else:
-				notes_detail.append({"path":row[1], "notebook":row[2], "tag":[row[4]]})
+				# modify time is stored in file system
+				notes_detail.append({"path":row[1], 
+						     "notebook":row[2], 
+						     "tag":[row[4]],
+						     "create_time":row[5],
+						     })
 			last = row
 
 		return notes_detail
@@ -412,12 +422,22 @@ class Notespace(object):
 		path = []
 		ids = self.get_database().get_notes_record(notebook, tags)
 		if ids:
-			return self.get_database().get_notes_detail_by_ids(ids)
+			result = self.get_database().get_notes_detail_by_ids(ids)
+			for record in result:
+				record["modify_time"] = self.get_note_modify_time(record["path"])
+			return result
 		else:
 			return None
 
 	def get_all_notes_detail(self):
-		return self.get_database().get_all_notes_detail()
+		result = self.get_database().get_all_notes_detail()
+		for record in result:
+			record["modify_time"] = self.get_note_modify_time(record["path"])
+		return result
+
+	def get_note_modify_time(self, relpath):
+		path = os.path.join(self.path, relpath)
+		return os.stat(path).st_mtime
 
 	def get_all_notes_path_by_notebook(self, notebook):
 		path = []
@@ -490,6 +510,9 @@ class NoteObject(object):
 		assert(notespace != None)
 		self.notespace = notespace
 		self.id = self.update_id()
+
+	def get_notespace(self):
+		return self.notespace
 
 	def get_database(self):
 		db = self.notespace.get_database()
@@ -620,6 +643,12 @@ class Note(NoteObject):
 			return True
 		else:
 			return False
+
+	def get_abspath(self):
+		return os.path.join(self. notespace.get_path(), self.relpath)
+
+	def get_modify_time(self):
+		return os.stat(self.get_abspath()).st_mtime
 
 	def clear_tags(self, sync):
 		self.get_database().clear_note_tags(self)

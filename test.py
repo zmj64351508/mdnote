@@ -16,6 +16,24 @@ show_result = True
 ok_count = 0
 fail_count = 0
 
+def cmp_result(actual, expected):
+	actual_len = len(actual)
+	expected_len = len(expected)
+	if actual_len != expected_len:
+		return False
+
+	i = 0
+	while i < actual_len:
+		# ignoring None
+		if expected[i] is None:
+			i += 1
+			continue
+		if cmp(expected[i], actual[i]) != 0:
+			return False
+		i += 1
+
+	return True
+
 def run_cmd(command, verbose, *expected_result):
 	global ok_count
 	global fail_count
@@ -46,7 +64,8 @@ def run_cmd(command, verbose, *expected_result):
 			print "##################"
 			print expected_result
 			print "##################"
-			if cmp(tuple(match), expected_result) == 0:
+			#if cmp(tuple(match), expected_result) == 0:
+			if cmp_result(tuple(match), expected_result):
 				ok_count += 1
 				print "\033[0;32mOK\033[0m"
 			else:
@@ -107,7 +126,8 @@ def run_sub_cmd_server(sub_command, verbose, *expected_result):
 			return
 		output = output[:-1]
 
-		if cmp(tuple(output), expected_result) == 0:
+		#if cmp(tuple(output), expected_result) == 0:
+		if cmp_result(tuple(output), expected_result):
 			ok_count += 1
 			print "\033[0;32mOK\033[0m"
 		else:
@@ -124,7 +144,7 @@ con = None
 targets = [
 	"add note -n",
 	"add note -t",
-	"list note"
+	"list note",
 	"general"
 ]
 
@@ -170,6 +190,9 @@ def result_list_detail(*results):
 		actual_result.append("PATH: " + result["path"])
 		actual_result.append("NOTEBOOK: " + result["notebook"])
 		actual_result.append("TAG: " + result["tag"])
+		# ignoring create time and modify time
+		actual_result.append(None) #"CREATE TIME: " + result["create_time"]
+		actual_result.append(None) #"MODIFY TIME: " + result["modify_time"])
 		actual_result.append(" ")
 	return actual_result
 
