@@ -53,10 +53,8 @@ def run_cmd(command, verbose, *expected_result):
 			# if running on Windows, each line is ended by a '\r'
 			i = 0
 			while i < len(match):
-				match[i].strip("\n")
-				match[i].strip("\r")
-				#if match[i][-1] == '\r':
-					#match[i] = match[i][:-1]
+				if match[i][-1] == '\r':
+					match[i] = match[i][:-1]
 				i += 1
 
 			print "##################"
@@ -354,8 +352,8 @@ def run_test_case(is_server):
 			{"path":"except_note", "notebook":"notebook1", "tag":""},
 			{"path":"note3", "notebook":"default notebook", "tag":"tag1;"},
 			{"path":"note4", "notebook":"notebook2", "tag":"tag2;"},
-			{"path":"sub_dir/sub1", "notebook":"notebook2", "tag":"tag2;"},
-			{"path":"sub_dir/sub2", "notebook":"notebook2", "tag":"tag2;tag3;"},
+			{"path":os.path.normpath("sub_dir/sub1"), "notebook":"notebook2", "tag":"tag2;"},
+			{"path":os.path.normpath("sub_dir/sub2"), "notebook":"notebook2", "tag":"tag2;tag3;"},
 		))
 		run_sub_cmd("list note -n notebook1", True, 
 			"note1",
@@ -367,8 +365,8 @@ def run_test_case(is_server):
 			"note2",
 		)
 		run_sub_cmd("list note sub_dir/*", True,
-			"sub_dir/sub1",
-			"sub_dir/sub2",
+			os.path.normpath("sub_dir/sub1"),
+			os.path.normpath("sub_dir/sub2"),
 		)
 		run_sub_cmd("list note " + os.path.abspath("note1"), True,
 			"note1",
