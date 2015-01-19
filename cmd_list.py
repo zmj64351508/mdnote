@@ -76,7 +76,8 @@ class NoteTarget(CommandGeneral):
 			# grep string
 			pass
 
-		self.list_filter(server, notebook, tags)
+		result = self.list_filter(notebook, tags)
+		self.print_result(server, result, self.arg_detail)
 
 	def find_notes(self, nb_names, n_names):
 		pass
@@ -105,25 +106,29 @@ class NoteTarget(CommandGeneral):
 				raise errors.NoSuchRecord()
 		return tags
 
-	def list_filter(self, server, notebook, tags):
+	def list_filter(self, notebook, tags):
 		if tags or notebook:
 			notes_detail = self.notespace.filter_note_detail(notebook, tags)
 		else:
 			notes_detail = self.notespace.get_all_notes_detail()
 
-		if not notes_detail:
+		return notes_detail
+
+	def print_result(self, server, result, print_detail):
+		if not result:
 			return
 
-		if self.arg_detail:
-			for detail in notes_detail:
-				self.output_result(server, detail["path"].__str__() + "|" + 
-						detail["notebook"].__str__() + "|")
+		if print_detail:
+			for detail in result:
+				self.output_result(server, "PATH: " + detail["path"].__str__() + "\n")
+				self.output_result(server, "NOTEBOOK: " + detail["notebook"].__str__() + "\n")
+				self.output_result(server, "TAG: ")
 				for tag in detail["tag"]:
 					if tag:
 						self.output_result(server, tag.__str__()+";")
-				self.output_result(server, "\n")
+				self.output_result(server, "\n \n")
 		else:
-			for detail in notes_detail:
+			for detail in result:
 				self.output_result(server, detail["path"].__str__() + "\n")
 
 	def usage(self):

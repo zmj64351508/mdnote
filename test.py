@@ -25,6 +25,9 @@ def run_cmd(command, verbose, *expected_result):
 		os.system(command)
 
 	if expected_result:
+		if type(expected_result[0]) is list:
+			expected_result = tuple(expected_result[0])
+
 		try:
 			output = subprocess.check_output(command, shell=True)
 			match = re.findall(r'^[^(\[DEBUG\])].*$', output, re.M)
@@ -32,8 +35,10 @@ def run_cmd(command, verbose, *expected_result):
 			# if running on Windows, each line is ended by a '\r'
 			i = 0
 			while i < len(match):
-				if match[i][-1] == '\r':
-					match[i] = match[i][:-1]
+				match[i].strip("\n")
+				match[i].strip("\r")
+				#if match[i][-1] == '\r':
+					#match[i] = match[i][:-1]
 				i += 1
 
 			print "##################"
@@ -86,6 +91,9 @@ def run_sub_cmd_server(sub_command, verbose, *expected_result):
 			output = buf.strip().split("\n")
 			break
 	if expected_result:
+		if type(expected_result[0]) is list:
+			expected_result = tuple(expected_result[0])
+
 		retval = output[-1][len("<return>"):] 
 		if cmp(retval, "None") == 0:
 			pass
@@ -154,6 +162,16 @@ def init_notespace(is_server):
 		con.connect(("localhost", 46000))
 	run_sub_cmd("init " + os.getcwd(), True)
 
+
+def result_list_detail(*results):
+	actual_result = []
+	for result in results:
+		actual_result.append("PATH: " + result["path"])
+		actual_result.append("NOTEBOOK: " + result["notebook"])
+		actual_result.append("TAG: " + result["tag"])
+		actual_result.append(" ")
+	return actual_result
+
 def run_test_case(is_server):
 	global ok_count
 	global fail_count
@@ -173,20 +191,21 @@ def run_test_case(is_server):
 		create_empty_files("note_new_1", "note_new_2", "note_new_3")
 		# add -n without -f, all notes are not in notespace
 		run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
-		run_sub_cmd("list note -d", True, 
-		"note_exist_1|notebook_exist|",
-		"note_exist_2|notebook_exist|",
-		"note_exist_3|notebook_exist|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_3", "notebook":"notebook_exist", "tag":""},
+		))
+
 		# add -n without -f
 		# 1. all notes are in notespace
 		# 2. new notebook specified
 		run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
-		run_sub_cmd("list note -d", True, 
-		"note_exist_1|notebook_exist|",
-		"note_exist_2|notebook_exist|",
-		"note_exist_3|notebook_exist|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_3", "notebook":"notebook_exist", "tag":""},
+		))
 		run_sub_cmd("list notebook", True, 
 		"default notebook",
 		"notebook_exist",
@@ -196,11 +215,11 @@ def run_test_case(is_server):
 		# 1. just 1 note are not in notespace, but didn't exist in directory
 		# 2. new notebook specified
 		run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
-		run_sub_cmd("list note -d", True,
-		"note_exist_1|notebook_exist|",
-		"note_exist_2|notebook_exist|",
-		"note_exist_3|notebook_exist|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_3", "notebook":"notebook_exist", "tag":""},
+		))
 		run_sub_cmd("list notebook", True, 
 		"default notebook",
 		"notebook_exist",
@@ -210,12 +229,12 @@ def run_test_case(is_server):
 		# 1. just 1 note are not in notespace
 		# 2. new notebook specified
 		run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
-		run_sub_cmd("list note -d", True,
-		"note_exist_1|notebook_exist|",
-		"note_exist_2|notebook_exist|",
-		"note_exist_3|notebook_exist|",
-		"note_new_1|new_notebook|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_exist_3", "notebook":"notebook_exist", "tag":""},
+			{"path":"note_new_1",   "notebook":"new_notebook",   "tag":""},
+		))
 		run_sub_cmd("list notebook", True, 
 		"default notebook",
 		"notebook_exist",
@@ -225,73 +244,73 @@ def run_test_case(is_server):
 		# add -n -f
 		# 1. just 1 note are not in notespace
 		run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
-		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook|",
-		"note_exist_2|new_notebook|",
-		"note_exist_3|new_notebook|",
-		"note_new_1|new_notebook|",
-		"note_new_2|new_notebook|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"new_notebook", "tag":""},
+			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
+			{"path":"note_exist_3", "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_1",   "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_2",   "notebook":"new_notebook", "tag":""},
+		))
 
 		# add -n -f
 		# 1. just 1 note are not in notespace, but not exist
 		# 2. new notebook specified
 		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
-		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook_2|",
-		"note_exist_2|new_notebook|",
-		"note_exist_3|new_notebook|",
-		"note_new_1|new_notebook|",
-		"note_new_2|new_notebook|",
-		)
-
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"new_notebook_2", "tag":""},
+			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
+			{"path":"note_exist_3", "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_1",   "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_2",   "notebook":"new_notebook", "tag":""},
+		))
+		
 		# add -n -f
 		# 1. just 1 note are not in notespace
 		# 2. new notebook specified
 		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
-		run_sub_cmd("list note -d", True,
-		"note_exist_1|new_notebook_2|",
-		"note_exist_2|new_notebook|",
-		"note_exist_3|new_notebook|",
-		"note_new_1|new_notebook|",
-		"note_new_2|new_notebook|",
-		"note_new_3|new_notebook_2|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note_exist_1", "notebook":"new_notebook_2", "tag":""},
+			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
+			{"path":"note_exist_3", "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_1",   "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_2",   "notebook":"new_notebook", "tag":""},
+			{"path":"note_new_3",   "notebook":"new_notebook_2", "tag":""},
+		))
 
 	if "add note -t" in targets:
 		init_notespace(is_server)
 		create_empty_files("note1", "note2", "note3", "note4")
 
 		run_sub_cmd("add note -t tag1 note1 note2", True)
-		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag1;",
-		"note2|default notebook|tag1;",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note1", "notebook":"default notebook", "tag":"tag1;"},
+			{"path":"note2", "notebook":"default notebook", "tag":"tag1;"},
+		))
 		
 		# without -f
 		run_sub_cmd("add note -t tag2 note1 note2", True)
-		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag1;tag2;",
-		"note2|default notebook|tag1;tag2;",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note1", "notebook":"default notebook", "tag":"tag1;tag2;"},
+			{"path":"note2", "notebook":"default notebook", "tag":"tag1;tag2;"},
+		))
 
 		# with -f
 		run_sub_cmd("add note -f -t tag2 note1 note3", True)
-		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag2;",
-		"note2|default notebook|tag1;tag2;",
-		"note3|default notebook|tag2;",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note1", "notebook":"default notebook", "tag":"tag2;"},
+			{"path":"note2", "notebook":"default notebook", "tag":"tag1;tag2;"},
+			{"path":"note3", "notebook":"default notebook", "tag":"tag2;"},
+		))
 		
 		# not exist file
 		run_sub_cmd("add note note4", True)
 		run_sub_cmd("add note -f -t tag3 not_exist", True)
-		run_sub_cmd("list note -d", True,
-		"note1|default notebook|tag2;",
-		"note2|default notebook|tag1;tag2;",
-		"note3|default notebook|tag2;",
-		"note4|default notebook|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"note1", "notebook":"default notebook", "tag":"tag2;"},
+			{"path":"note2", "notebook":"default notebook", "tag":"tag1;tag2;"},
+			{"path":"note3", "notebook":"default notebook", "tag":"tag2;"},
+			{"path":"note4", "notebook":"default notebook", "tag":""},
+		))
 		run_sub_cmd("list tag", True,
 		"tag1",
 		"tag2",
@@ -327,14 +346,14 @@ def run_test_case(is_server):
 		run_sub_cmd('add note sub_dir/sub0', True)
 		run_sub_cmd('add note ./sub_dir/sub1', True)
 		run_sub_cmd('add note ' + os.path.abspath("sub_dir/sub2"), True)
-		run_sub_cmd('list note -d', True, 
-		"default_0|default notebook|",
-		"default_1|default notebook|",
-		"default_2|default notebook|",
-		os.path.normpath("sub_dir/sub0")+"|default notebook|",
-		os.path.normpath("sub_dir/sub1")+"|default notebook|",
-		os.path.normpath("sub_dir/sub2")+"|default notebook|",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"default_0", "notebook":"default notebook", "tag":""},
+			{"path":"default_1", "notebook":"default notebook", "tag":""},
+			{"path":"default_2", "notebook":"default notebook", "tag":""},
+			{"path":os.path.normpath("sub_dir/sub0"), "notebook":"default notebook", "tag":""},
+			{"path":os.path.normpath("sub_dir/sub1"), "notebook":"default notebook", "tag":""},
+			{"path":os.path.normpath("sub_dir/sub2"), "notebook":"default notebook", "tag":""},
+		))
 
 		run_sub_cmd('add note -t default1 default_1', True)
 		run_sub_cmd('add note -t default1 default_2', True)
@@ -360,20 +379,20 @@ def run_test_case(is_server):
 		"notebook_1_0",
 		"notebook_1_2",
 		)
-		run_sub_cmd('list note -d', True,
-		"default_0|default notebook|",
-		"default_1|default notebook|default1;default2;",
-		"default_2|default notebook|default1;",
-		os.path.normpath("sub_dir/sub0")+"|default notebook|",
-		os.path.normpath("sub_dir/sub1")+"|default notebook|",
-		os.path.normpath("sub_dir/sub2")+"|default notebook|",
-		"notebook_0_0|notebook_0|",
-		"notebook_0_2|notebook_0|",
-		"notebook_0_1|notebook_0|",
-		"notebook_1_1|notebook_1|default1;",
-		"notebook_1_0|notebook_1|",
-		"notebook_1_2|notebook_1|default1;default2;",
-		)
+		run_sub_cmd("list note -d", True, result_list_detail(
+			{"path":"default_0", "notebook":"default notebook", "tag":""},
+			{"path":"default_1", "notebook":"default notebook", "tag":"default1;default2;"},
+			{"path":"default_2", "notebook":"default notebook", "tag":"default1;"},
+			{"path":os.path.normpath("sub_dir/sub0"), "notebook":"default notebook", "tag":""},
+			{"path":os.path.normpath("sub_dir/sub1"), "notebook":"default notebook", "tag":""},
+			{"path":os.path.normpath("sub_dir/sub2"), "notebook":"default notebook", "tag":""},
+			{"path":"notebook_0_0", "notebook":"notebook_0", "tag":""},
+			{"path":"notebook_0_2", "notebook":"notebook_0", "tag":""},
+			{"path":"notebook_0_1", "notebook":"notebook_0", "tag":""},
+			{"path":"notebook_1_1", "notebook":"notebook_1", "tag":"default1;"},
+			{"path":"notebook_1_0", "notebook":"notebook_1", "tag":""},
+			{"path":"notebook_1_2", "notebook":"notebook_1", "tag":"default1;default2;"},
+		))
 
 		run_sub_cmd('list note -n notebook_1', True,
 		"notebook_1_1",
@@ -398,10 +417,9 @@ def run_test_case(is_server):
 		"default_1",
 		"notebook_1_2",
 		) 
-		run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True,
-		"notebook_1_2|notebook_1|default1;default2;",
-		) 
-
+		run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True, result_list_detail(
+			{"path":"notebook_1_2", "notebook":"notebook_1", "tag":"default1;default2;"},
+		))
 
 		run_sub_cmd('list note -n not_exsit_nb', True, 4)
 
