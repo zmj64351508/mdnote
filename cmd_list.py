@@ -133,7 +133,7 @@ class NoteTarget(CommandGeneral):
 		# We don't want to output any note that is not presented in note_names except note_names is None
 		result = []
 		if note_names:
-			debug.message(debug.ERROR, "filter for note name: ", note_names)
+			debug.message(debug.DEBUG, "filter for note name: ", note_names)
 			for note_detail in notes_detail:
 				if note_detail["path"] in note_names:
 					result.append(note_detail)

@@ -282,8 +282,8 @@ class Database(object):
 				notes_detail[-1]["tag"].append(row[4])
 			# new note record
 			else:
-				# modify time is stored in file system
-				notes_detail.append({"path":row[1], 
+				# normalize the path
+				notes_detail.append({"path":os.path.normpath(row[1]), 
 						     "notebook":row[2], 
 						     "tag":[row[4]],
 						     "create_time":row[5],
