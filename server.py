@@ -208,7 +208,10 @@ class ServerThread(threading.Thread):
 	def run(self):
 		self.__stopped = False
 		while not self.__stopped:
-			data = self.connection.recv(1024)
+			try:
+				data = self.connection.recv(1024)
+			except socket.error:
+				break
 			if not data:
 				break
 			cmds = data.strip().split("\n")
