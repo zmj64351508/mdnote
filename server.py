@@ -1,6 +1,7 @@
 import os
 import socket
 import threading
+import getopt
 #import select
 import debug
 from cmd import *
@@ -17,27 +18,44 @@ class Main(CommandGeneral):
 		super(Main, self).__init__()
 		self.notebooks = {}
 		self.server = Server(general_commands)
+		self.auto_exit = False
 
 	def main(self, argc, argv):
 		if argc < 1:
 			self.usage()
-			exit()
-		self.server.start()
+			raise errors.UsageError()
+		opts, args = getopt.getopt(argv[1:], "", ["auto-exit"])
+		for op, value in opts:
+			if op in ("--auto-exit"):
+				self.auto_exit = True
+
+		self.server.start(self.auto_exit)
 						
 	def usage(self):
 		print "usage: mdnote server"
 
-def signal_handler(signal, frame):
+def kill_handler(signal, frame):
 	global server_socket
 	debug.message(debug.INFO, "exit because of signal")
 	server_socket.close()
 	sys.exit(0)
 
+def break_handler(signal, frame):
+	pass
+
 class Server(object):
 	def __init__(self, general_commands):
 		self.general_commands = general_commands
+		self.threads_lock = threading.Lock()
+		self.threads = []
 
-	def start(self):
+	def check_alive_thread(self):
+		for thread in self.threads:
+			if not thread.isAlive():
+				self.threads.remove(thread)
+		return len(self.threads)
+
+	def start(self, auto_exit):
 		debug.message(debug.DEBUG, "starting server")
 		server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		#server.setblocking(False)
@@ -54,15 +72,22 @@ class Server(object):
 		# need to handler signal
 		global server_socket
 		server_socket = server
-		signal.signal(signal.SIGINT, signal_handler)
-		signal.signal(signal.SIGTERM, signal_handler)
+		signal.signal(signal.SIGINT, kill_handler)
+		signal.signal(signal.SIGTERM, kill_handler)
 
 		debug.message(debug.DEBUG, "started server, listening")
 		while True:
-			connection, client_addr = server.accept()
-			debug.message(debug.DEBUG, "new client ", client_addr, " accepted.")
-			thread = ServerThread(connection, client_addr, self.general_commands)
-			thread.start()
+			try:
+				connection, client_addr = server.accept()
+			except socket.error:
+				debug.message(debug.DEBUG, "accept is interrupted")
+			else:
+				debug.message(debug.DEBUG, "new client ", client_addr, " accepted.")
+				self.threads_lock.acquire()
+				thread = ServerThread(self, connection, client_addr, self.general_commands)
+				self.threads.append(thread)
+				self.threads_lock.release()
+				thread.start()
 
 		"""
 		while True:
@@ -171,13 +196,14 @@ class ServerCommand(object):
 		return self.notespace
 
 class ServerThread(threading.Thread):
-	def __init__(self, connection, client_addr, general_commands):
+	def __init__(self, server, connection, client_addr, general_commands):
 		super(ServerThread, self).__init__()
 		self.connection = connection
 		self.client_addr = client_addr
 		self.__stopped = True
 		self.output_buffer = []
 		self.server_commands = ServerCommand(general_commands)
+		self.server = server
 
 	def run(self):
 		self.__stopped = False
@@ -192,6 +218,14 @@ class ServerThread(threading.Thread):
 		debug.message(debug.INFO, "closing connection")
 		self.server_commands.close()
 		self.connection.close()
+		# whether we are the only thread
+		self.server.threads_lock.acquire()
+		thread_count = self.server.check_alive_thread()
+		debug.message(debug.DEBUG, "thread count is ", thread_count)
+		if thread_count == 1:
+			debug.message(debug.INFO, "terminate self")
+			os.kill(os.getpid(), signal.SIGTERM)
+		self.server.threads_lock.release()
 
 	def stop(self):
 		self.__stopped = True
