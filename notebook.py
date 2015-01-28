@@ -110,6 +110,7 @@ class Database(object):
 			"tag":TagTable,
 			"note_vs_tag":NoteVsTagTable,
 		}
+		path = path.decode(sys.getfilesystemencoding()).encode("utf8")
 		self.connect = sqlite3.connect(path)
 		# Transfer class to instance
 		for name in self.tables:
@@ -410,11 +411,11 @@ class Notespace(object):
 
 	# find a note in notespace directory
 	def find_note_from_path(self, note_path):
+		note_path = note_path.decode("utf8").encode(sys.getfilesystemencoding())
 		if not os.path.isabs(note_path):
 			note_path = os.path.join(self.path, note_path)
-		path = note_path.decode("utf8").encode(sys.getfilesystemencoding())
-		if os.path.isfile(path):
-			return Note(self, path)
+		if os.path.isfile(note_path):
+			return Note(self, note_path)
 		else:
 			return None
 
@@ -436,7 +437,8 @@ class Notespace(object):
 		return result
 
 	def get_note_modify_time(self, relpath):
-		path = os.path.join(self.path, relpath)
+		path = os.path.join(self.path,
+			relpath.encode(sys.getfilesystemencoding()))
 		return os.stat(path).st_mtime
 
 	def get_all_notes_path_by_notebook(self, notebook):

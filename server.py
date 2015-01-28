@@ -150,7 +150,7 @@ class ServerCommand(object):
 		if argc <= 1:
 			path = os.getcwd()
 		else:
-			path = argv[1]
+			path = argv[1].decode("utf8").encode(sys.getfilesystemencoding())
 
 		if not os.path.isabs(path):
 			raise errors.UsageError("open must use absolute path")

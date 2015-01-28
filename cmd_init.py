@@ -1,6 +1,6 @@
 # Command:
 #     init
-import os
+import os, sys
 import debug
 from cmd import *
 from notebook import Notebook
@@ -30,7 +30,7 @@ class Main(CommandGeneral):
 			self.usage()
 			exit()
 		elif argc == 2:
-			path = argv[1]
+			path = argv[1].decode("utf8").encode(sys.getfilesystemencoding())
 		else:
 			path = "."
 
