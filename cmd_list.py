@@ -111,6 +111,7 @@ class NoteTarget(CommandGeneral):
 				# All the path should relative to notespace's path instead of `pwd`.
 				# So make the absolute path according to notespace's path
 				# so that we can use glob to find the note
+				path = path.decode("utf8").encode(sys.getfilesystemencoding())
 				if not os.path.isabs(path):
 					path = os.path.join(self.notespace.get_path(), path)
 
@@ -120,6 +121,7 @@ class NoteTarget(CommandGeneral):
 					# At last the path store in database is relative path to notespace' path
 					# So we re-build this path
 					relative_path = os.path.relpath(real_path, self.notespace.get_path())
+					relative_path = relative_path.decode(sys.getfilesystemencoding()).encode("utf8")
 					note_names.append(relative_path)
 		return note_names
 
@@ -135,7 +137,7 @@ class NoteTarget(CommandGeneral):
 		if note_names:
 			debug.message(debug.DEBUG, "filter for note name: ", note_names)
 			for note_detail in notes_detail:
-				if note_detail["path"] in note_names:
+				if note_detail["path"].encode("utf8") in note_names:
 					result.append(note_detail)
 			return result
 		else:
@@ -147,23 +149,23 @@ class NoteTarget(CommandGeneral):
 
 		if print_detail:
 			for detail in result:
-				self.output_result(server, "PATH: " + detail["path"].__str__() + "\n")
-				self.output_result(server, "NOTEBOOK: " + detail["notebook"].__str__() + "\n")
+				self.output_result(server, "PATH: ", detail["path"], "\n")
+				self.output_result(server, "NOTEBOOK: ", detail["notebook"], "\n")
 				self.output_result(server, "TAG: ")
 				for tag in detail["tag"]:
 					if tag:
-						self.output_result(server, tag.__str__()+";")
+						self.output_result(server, tag,";")
 				self.output_result(server, "\n")
 				if server:
-					self.output_result(server, "CREATE TIME: " + str(detail["create_time"]) + "\n")
-					self.output_result(server, "MODIFY TIME: " + str(detail["modify_time"]) + "\n")
+					self.output_result(server, "CREATE TIME: ", detail["create_time"], "\n")
+					self.output_result(server, "MODIFY TIME: ", detail["modify_time"], "\n")
 				else:
-					self.output_result(server, "CREATE TIME: " + time.ctime(detail["create_time"]) + "\n")
-					self.output_result(server, "MODIFY TIME: " + time.ctime(detail["modify_time"]) + "\n")
+					self.output_result(server, "CREATE TIME: ", time.ctime(detail["create_time"]), "\n")
+					self.output_result(server, "MODIFY TIME: ", time.ctime(detail["modify_time"]), "\n")
 				self.output_result(server, " \n")
 		else:
 			for detail in result:
-				self.output_result(server, detail["path"].__str__() + "\n")
+				self.output_result(server, detail["path"], "\n")
 
 	def usage(self):
 		print "usage: mdnote list"

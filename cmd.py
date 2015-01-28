@@ -23,11 +23,14 @@ class CommandBase(object):
 	def usage(self):
 		print "Command base"
 
-	def output_result(self, server, string):
+	def output_result(self, server, *strings):
+		output = unicode("").encode("utf8")
+		for string in strings:
+			output += unicode(string).encode("utf8")
 		if server:
-			server.send_data(string)
+			server.send_data(output)
 		else:
-			sys.stdout.write(string)
+			sys.stdout.write(output)
 
 # Command such as "add <target> xxx"
 class CommandWithTarget(CommandBase):

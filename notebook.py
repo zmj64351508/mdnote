@@ -1,5 +1,5 @@
 import sqlite3
-import os, time
+import os, sys, time
 import errors
 import debug
 
@@ -68,10 +68,10 @@ class NoteTable(DatabaseTable):
 	def insert_note(self, note, notebook, create_time):
 		if type(note) != Note:
 			raise TypeError
-		debug.message(debug.DEBUG, "Inserting " + note.get_relpath() + " to database")
-		self.insert(note.get_relpath(), notebook.get_id(), create_time)
-		#self.connect.execute("INSERT INTO note VALUES(null, '" + note.get_relpath() + "', null, null)")
-		cursor = self.select("id", "WHERE path='" + note.get_relpath() + "'")
+		debug.message(debug.DEBUG, "Inserting " + note.get_relpath_unicode() + " to database")
+		self.insert(note.get_relpath_unicode(), notebook.get_id(), create_time)
+		#self.connect.execute("INSERT INTO note VALUES(null, '" + note.get_relpath_unicode() + "', null, null)")
+		cursor = self.select("id", "WHERE path='" + note.get_relpath_unicode() + "'")
 		n_id = cursor.next()[0]
 		note.set_id(n_id)
 		return n_id
@@ -412,9 +412,9 @@ class Notespace(object):
 	def find_note_from_path(self, note_path):
 		if not os.path.isabs(note_path):
 			note_path = os.path.join(self.path, note_path)
-		if os.path.isfile(note_path):
-			# Note need to know the relative path
-			return Note(self, os.path.relpath(note_path, self.path))
+		path = note_path.decode("utf8").encode(sys.getfilesystemencoding())
+		if os.path.isfile(path):
+			return Note(self, path)
 		else:
 			return None
 
@@ -616,6 +616,7 @@ class Tag(NoteContainer):
 		return self.id
 
 class Note(NoteObject):
+	# note_path should be encoded by sys.getfilesystemencode()
 	def __init__(self, notespace, note_path):
 		if os.path.isabs(note_path):
 			self.relpath = os.path.relpath(note_path, notespace.get_path())
@@ -633,6 +634,9 @@ class Note(NoteObject):
 	
 	def get_relpath(self):
 		return self.relpath
+
+	def get_relpath_unicode(self):
+		return self.relpath.decode(sys.getfilesystemencoding()).encode("utf8")
 
 	def get_name(self):
 		return self.name
