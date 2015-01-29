@@ -90,7 +90,7 @@ class Server(object):
 			else:
 				debug.message(debug.DEBUG, "new client ", client_addr, " accepted.")
 				self.threads_lock.acquire()
-				thread = ServerThread(self, connection, client_addr, self.general_commands)
+				thread = ServerThread(self, connection, client_addr, self.general_commands, auto_exit)
 				self.threads.append(thread)
 				self.threads_lock.release()
 				thread.start()
@@ -202,12 +202,13 @@ class ServerCommand(object):
 		return self.notespace
 
 class ServerThread(threading.Thread):
-	def __init__(self, server, connection, client_addr, general_commands):
+	def __init__(self, server, connection, client_addr, general_commands, auto_exit):
 		super(ServerThread, self).__init__()
 		self.connection = connection
 		self.client_addr = client_addr
 		self.__stopped = True
 		self.output_buffer = []
+		self.auto_exit = auto_exit
 		self.server_commands = ServerCommand(general_commands)
 		self.server = server
 
@@ -225,20 +226,21 @@ class ServerThread(threading.Thread):
 				for cmd in cmds:
 					self.parse_input(cmd)
 					self.actual_send_result()
+		except Exception:
+			traceback.print_exc()
+		finally:
 			debug.message(debug.INFO, "closing connection")
 			self.server_commands.close()
 			self.connection.close()
-			# whether we are the only thread
-			self.server.threads_lock.acquire()
-			thread_count = self.server.check_alive_thread()
-			debug.message(debug.DEBUG, "thread count is ", thread_count)
-			if thread_count == 1:
-				debug.message(debug.INFO, "terminate self")
-				os.kill(os.getpid(), signal.SIGTERM)
-			self.server.threads_lock.release()
-		except Exception:
-			traceback.print_exc()
-			os.kill(os.getpid(), signal.SIGTERM)
+			if self.auto_exit:
+				# whether we are the only thread
+				self.server.threads_lock.acquire()
+				thread_count = self.server.check_alive_thread()
+				debug.message(debug.DEBUG, "thread count is ", thread_count)
+				if thread_count == 1:
+					debug.message(debug.INFO, "terminate self")
+					os.kill(os.getpid(), signal.SIGTERM)
+				self.server.threads_lock.release()
 
 	def stop(self):
 		self.__stopped = True
