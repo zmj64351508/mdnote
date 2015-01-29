@@ -1,5 +1,5 @@
 import sqlite3
-import os, sys, time
+import os, sys, time, glob
 import errors
 import debug
 
@@ -211,6 +211,14 @@ class Database(object):
 			note_cond += " note.id=" + str(n_id)
 		return self.get_notes_command("WHERE " + note_cond)
 
+	def get_notes_by_path(self, paths):
+		note_cond = ""
+		for path in paths:
+			if note_cond:
+				note_cond += " OR"
+			note_cond += " note.path='" + str(path) + "'"
+		return self.get_notes_command("WHERE " + note_cond)
+
 	def get_notes_record(self, notebook, tags):
 		nb_id = None
 		notebook_cond = ""
@@ -284,7 +292,8 @@ class Database(object):
 			# new note record
 			else:
 				# normalize the path
-				notes_detail.append({"path":os.path.normpath(row[1]), 
+				notes_detail.append({"id":row[0],
+						     "path":os.path.normpath(row[1]), 
 						     "notebook":row[2], 
 						     "tag":[row[4]],
 						     "create_time":row[5],
@@ -320,6 +329,31 @@ class Database(object):
 		for row in cu:
 			name.append(row[1])
 		return name
+
+	def remove_notes_by_path(self, notes_path, sync):
+		cursor = self.get_notes_by_path(notes_path)
+		result = self.get_notes_detail_by_cursor(cursor)
+		debug.message(debug.DEBUG, "Removing ", str(result))
+		note_table_cond = ""
+		n_v_t_table_cond = ""
+		for detail in result:
+			if note_table_cond:
+				note_table_cond += " OR"
+			if n_v_t_table_cond:
+				n_v_t_table_cond += " OR"
+			note_table_cond += " id=" + str(detail["id"])
+			n_v_t_table_cond += " n_id=" + str(detail["id"])
+
+		note_table = self.get_table("note")
+		note_table.delete("WHERE " + note_table_cond)
+
+		n_v_t_table = self.get_table("note_vs_tag")
+		n_v_t_table.delete("WHERE " + n_v_t_table_cond)
+
+		if sync:
+			self.commit()
+
+		return result
 
 	def get_all_tags(self):
 		db_table = self.get_table("tag")
@@ -409,6 +443,27 @@ class Notespace(object):
 		self.meta_path = meta_path
 		return notespace_path
 
+	def norm_note_path(self, to_norm):
+		note_paths = []
+		if to_norm:
+			for path in to_norm:
+				# All the path should relative to notespace's path instead of `pwd`.
+				# So make the absolute path according to notespace's path
+				# so that we can use glob to find the note
+				path = path.decode("utf8").encode(sys.getfilesystemencoding())
+				if not os.path.isabs(path):
+					path = os.path.join(self.get_path(), path)
+
+				glob_result = glob.glob(path)
+
+				for real_path in glob_result:
+					# At last the path store in database is relative path to notespace' path
+					# So we re-build this path
+					relative_path = os.path.relpath(real_path, self.get_path())
+					relative_path = relative_path.decode(sys.getfilesystemencoding()).encode("utf8")
+					note_paths.append(relative_path)
+		return note_paths
+
 	# find a note in notespace directory
 	def find_note_from_path(self, note_path):
 		note_path = note_path.decode("utf8").encode(sys.getfilesystemencoding())
@@ -460,6 +515,18 @@ class Notespace(object):
 	
 	def get_all_tags(self):
 		return self.get_database().get_all_tags()
+
+	def remove_notes_by_path(self, notes_path, purge, sync):
+		if not notes_path:
+			return None
+		details = self.get_database().remove_notes_by_path(notes_path, sync)
+		if purge:
+			for detail in details:
+				try:
+					path = os.path.join(self.path, detail["path"].decode("utf8").encode(sys.getfilesystemencoding()))
+					os.remove(path)
+				except IOError:
+					traceback.print_exc()
 
 	def exists(self):
 		return self.path != None

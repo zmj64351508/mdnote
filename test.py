@@ -12,6 +12,7 @@ except:
 
 
 show_result = True
+exit_at_fail = True
 
 ok_count = 0
 fail_count = 0
@@ -46,6 +47,8 @@ def run_cmd(command, verbose, *expected_result):
 		if type(expected_result[0]) is list:
 			expected_result = tuple(expected_result[0])
 
+		if not expected_result[0] and len(expected_result) == 1:
+			expected_result = ""
 		try:
 			output = subprocess.check_output(command, shell=True)
 			match = re.findall(r'^[^(\[DEBUG\])].*$', output, re.M)
@@ -77,6 +80,8 @@ def run_cmd(command, verbose, *expected_result):
 			else:
 				fail_count += 1
 				print "\033[0;31mFail\033[0m"
+				if exit_at_fail:
+					exit()
 
 	else:
 		os.system(command + "> /dev/null")
@@ -110,6 +115,8 @@ def run_sub_cmd_server(sub_command, verbose, *expected_result):
 	if expected_result:
 		if type(expected_result[0]) is list:
 			expected_result = tuple(expected_result[0])
+		if not expected_result[0] and len(expected_result) == 1:
+			expected_result = ""
 
 		retval = output[-1][len("<return>"):] 
 		if cmp(retval, "None") == 0:
@@ -131,6 +138,8 @@ def run_sub_cmd_server(sub_command, verbose, *expected_result):
 		else:
 			fail_count += 1
 			print "\033[0;31mFail\033[0m"
+			if exit_at_fail:
+				exit()
 
 notebook_count = 2
 note_per_notebook = 3
@@ -142,6 +151,7 @@ con = None
 targets = [
 	"add note -n",
 	"add note -t",
+	"rm note",
 	"list note",
 	"general"
 ]
@@ -375,6 +385,32 @@ def run_test_case(is_server):
 			"note1",
 			"note2",
 		)
+
+	if "rm note" in targets:
+		init_notespace(is_server)
+		create_empty_files("note1", "note2", "note3", "note4", "another")
+
+		run_sub_cmd('add note -t tag1 note1 note2', True)
+		run_sub_cmd('add note -n notebook1 -t tag3 note3', True)
+		run_sub_cmd('add note -n notebook2 -t tag4 note4 another', True)
+
+		run_sub_cmd('rm note note1 note2', True)
+		run_sub_cmd('list note', True,
+		"note3",
+		"note4",
+		"another")
+
+		run_sub_cmd('rm note note*', True)
+		run_sub_cmd('list note', True,
+		"another")
+
+		run_sub_cmd('rm note not_exist', True)
+		run_sub_cmd('list note', True,
+		"another")
+
+		run_sub_cmd('rm note --purge another', True)
+		run_sub_cmd('list note', True,
+		"")
 	
 	if "general" in targets:
 		init_notespace(is_server)

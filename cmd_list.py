@@ -72,7 +72,7 @@ class NoteTarget(CommandGeneral):
 			tags = self.find_tags(self.arg_tags)
 
 		# normalize note name specified
-		note_names = self.norm_note_name(self.arg_string)
+		note_names = self.notespace.norm_note_path(self.arg_string)
 		
 		result = self.list_filter(notebook, tags, note_names)
 		self.print_result(server, result, self.arg_detail)
@@ -103,27 +103,6 @@ class NoteTarget(CommandGeneral):
 				debug.message(debug.ERROR, "No tag named ", name)
 				raise errors.NoSuchRecord()
 		return tags
-
-	def norm_note_name(self, to_norm):
-		note_names = []
-		if self.arg_string:
-			for path in to_norm:
-				# All the path should relative to notespace's path instead of `pwd`.
-				# So make the absolute path according to notespace's path
-				# so that we can use glob to find the note
-				path = path.decode("utf8").encode(sys.getfilesystemencoding())
-				if not os.path.isabs(path):
-					path = os.path.join(self.notespace.get_path(), path)
-
-				glob_result = glob.glob(path)
-
-				for real_path in glob_result:
-					# At last the path store in database is relative path to notespace' path
-					# So we re-build this path
-					relative_path = os.path.relpath(real_path, self.notespace.get_path())
-					relative_path = relative_path.decode(sys.getfilesystemencoding()).encode("utf8")
-					note_names.append(relative_path)
-		return note_names
 
 	def list_filter(self, notebook, tags, note_names):
 		if tags or notebook:

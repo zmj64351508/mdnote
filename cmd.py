@@ -41,7 +41,7 @@ class CommandWithTarget(CommandBase):
 		# at least need command "add <target>"
 		if argc < 2:
 			self.usage()
-			raise error.UsageError()
+			raise errors.UsageError()
 
 		target_name = argv[1]
 		return self.target_factory.Create(target_name)
