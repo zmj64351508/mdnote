@@ -1,5 +1,6 @@
 import os
 import socket
+import traceback
 import threading
 import getopt
 #import select
@@ -38,6 +39,11 @@ def kill_handler(signal, frame):
 	global server_socket
 	debug.message(debug.INFO, "exit because of signal")
 	server_socket.close()
+	try:
+		debug.message(debug.INFO, "wait children")
+		os.wait()
+	except OSError:
+		pass
 	sys.exit(0)
 
 def break_handler(signal, frame):
@@ -206,29 +212,33 @@ class ServerThread(threading.Thread):
 		self.server = server
 
 	def run(self):
-		self.__stopped = False
-		while not self.__stopped:
-			try:
-				data = self.connection.recv(1024)
-			except socket.error:
-				break
-			if not data:
-				break
-			cmds = data.strip().split("\n")
-			for cmd in cmds:
-				self.parse_input(cmd)
-				self.actual_send_result()
-		debug.message(debug.INFO, "closing connection")
-		self.server_commands.close()
-		self.connection.close()
-		# whether we are the only thread
-		self.server.threads_lock.acquire()
-		thread_count = self.server.check_alive_thread()
-		debug.message(debug.DEBUG, "thread count is ", thread_count)
-		if thread_count == 1:
-			debug.message(debug.INFO, "terminate self")
+		try:
+			self.__stopped = False
+			while not self.__stopped:
+				try:
+					data = self.connection.recv(1024)
+				except socket.error:
+					break
+				if not data:
+					break
+				cmds = data.strip().split("\n")
+				for cmd in cmds:
+					self.parse_input(cmd)
+					self.actual_send_result()
+			debug.message(debug.INFO, "closing connection")
+			self.server_commands.close()
+			self.connection.close()
+			# whether we are the only thread
+			self.server.threads_lock.acquire()
+			thread_count = self.server.check_alive_thread()
+			debug.message(debug.DEBUG, "thread count is ", thread_count)
+			if thread_count == 1:
+				debug.message(debug.INFO, "terminate self")
+				os.kill(os.getpid(), signal.SIGTERM)
+			self.server.threads_lock.release()
+		except Exception:
+			traceback.print_exc()
 			os.kill(os.getpid(), signal.SIGTERM)
-		self.server.threads_lock.release()
 
 	def stop(self):
 		self.__stopped = True
