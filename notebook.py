@@ -1,5 +1,5 @@
 import sqlite3
-import os, sys, time, glob
+import os, sys, time, glob, traceback
 import errors
 import debug
 
@@ -524,7 +524,7 @@ class Notespace(object):
 				try:
 					path = os.path.join(self.path, path)
 					os.remove(path)
-				except IOError:
+				except Exception:
 					traceback.print_exc()
 					return -1
 		details = self.get_database().remove_notes_by_path(notes_path, sync)
