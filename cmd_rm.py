@@ -32,10 +32,10 @@ class NoteTarget(CommandGeneral):
 		self.target_general = RmGeneral()
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		if argc < 1:
@@ -50,9 +50,7 @@ class NoteTarget(CommandGeneral):
 		self.notespace = self.target_general.get_notespace(core)
 		notes_path = self.notespace.norm_note_path(args)
 		debug.message(debug.DEBUG, "notes path are ", notes_path)
-		self.notespace.remove_notes_by_path(notes_path, self.arg_purge, True)
-
-		return 0
+		return self.notespace.remove_notes_by_path(notes_path, self.arg_purge, True)
 
 	def usage(self):
 		print "usage: mdnote list"

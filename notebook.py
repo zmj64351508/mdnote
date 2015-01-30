@@ -518,15 +518,17 @@ class Notespace(object):
 
 	def remove_notes_by_path(self, notes_path, purge, sync):
 		if not notes_path:
-			return None
-		details = self.get_database().remove_notes_by_path(notes_path, sync)
+			return -1
 		if purge:
-			for detail in details:
+			for path in notes_path:
 				try:
-					path = os.path.join(self.path, detail["path"].encode(sys.getfilesystemencoding()))
+					path = os.path.join(self.path, path)
 					os.remove(path)
 				except IOError:
 					traceback.print_exc()
+					return -1
+		details = self.get_database().remove_notes_by_path(notes_path, sync)
+		return 0
 
 	def exists(self):
 		return self.path != None

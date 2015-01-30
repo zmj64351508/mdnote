@@ -14,11 +14,11 @@ class TargetFactory(object):
 class CommandBase(object):
 	def main(self, argc, argv):
 		print "Command Base main"
-		pass
+		return 0
 
 	def core_main(self, core_thread, argc, argv):
 		print "Command Base core main"
-		pass
+		return 0
 
 	def usage(self):
 		print "Command base"
@@ -48,11 +48,11 @@ class CommandWithTarget(CommandBase):
 
 	def main(self, argc, argv):
 		target = self.get_target(argc, argv)
-		target.main(argc - 1, argv[1:])
+		return target.main(argc - 1, argv[1:])
 
 	def core_main(self, core, argc, argv):
 		target = self.get_target(argc, argv)
-		target.core_main(core, argc - 1, argv[1:])
+		return target.core_main(core, argc - 1, argv[1:])
 
 	def usage(self):
 		print "Command With Target"

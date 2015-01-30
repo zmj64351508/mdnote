@@ -35,10 +35,10 @@ class NoteTarget(CommandGeneral):
 		self.target_general = ListGeneral()
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		if argc < 1:
@@ -76,6 +76,7 @@ class NoteTarget(CommandGeneral):
 		
 		result = self.list_filter(notebook, tags, note_names)
 		self.print_result(core, result, self.arg_detail)
+		return 0
 
 	def find_notes(self, nb_names, n_names):
 		pass
@@ -159,10 +160,10 @@ class NotebookTarget(CommandGeneral):
 		self.target_general = ListGeneral()
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		if argc < 1:
@@ -180,6 +181,7 @@ class NotebookTarget(CommandGeneral):
 		notebooks = self.notespace.get_all_notebooks()
 		for notebook in notebooks:
 			self.output_result(core, notebook + "\n")
+		return 0
 	
 	def usage(self):
 		print "usage: mdnote list notebook"
@@ -191,10 +193,10 @@ class TagTarget(CommandGeneral):
 		self.target_general = ListGeneral()
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		if argc < 1:
@@ -212,6 +214,7 @@ class TagTarget(CommandGeneral):
 		tags = self.notespace.get_all_tags()
 		for tag in tags:
 			self.output_result(core, tag + "\n")
+		return 0
 	
 	def usage(self):
 		print "usage: mdnote list notebook"

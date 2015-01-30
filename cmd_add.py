@@ -33,10 +33,10 @@ class NoteTarget(CommandGeneral):
 		self.target_general = AddGeneral()
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		opts, args = getopt.getopt(argv[1:], "n:t:f", ["notebook=", "tag=", "force"])
@@ -74,6 +74,7 @@ class NoteTarget(CommandGeneral):
 			self.add_notes_to_tags(note, self.arg_tags, self.arg_force)
 
 		self.notespace.get_database().commit()
+		return 0
 	
 	# notebook can be class Notebook or notebook path
 	def add_notes_to_notebook(self, notes_path, notebook, force_update):

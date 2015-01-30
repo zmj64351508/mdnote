@@ -20,10 +20,10 @@ class Main(CommandGeneral):
 		return notespace
 
 	def main(self, argc, argv):
-		self.do_main(None, argc, argv)
+		return self.do_main(None, argc, argv)
 
 	def core_main(self, core, argc, argv):
-		self.do_main(core, argc, argv)
+		return self.do_main(core, argc, argv)
 
 	def do_main(self, core, argc, argv):
 		if argc < 1:
@@ -45,6 +45,7 @@ class Main(CommandGeneral):
 			self.notespace.create_default_notebook()
 		else:
 			debug.message(debug.DEBUG, "Notespace already exists do nothing")
+		return 0
 
 	def usage(self):
 		print "usage: mdnote init"
