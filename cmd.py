@@ -16,19 +16,19 @@ class CommandBase(object):
 		print "Command Base main"
 		pass
 
-	def server_main(self, server_thread, argc, argv):
-		print "Command Base server main"
+	def core_main(self, core_thread, argc, argv):
+		print "Command Base core main"
 		pass
 
 	def usage(self):
 		print "Command base"
 
-	def output_result(self, server, *strings):
+	def output_result(self, core, *strings):
 		output = unicode("").encode("utf8")
 		for string in strings:
 			output += unicode(string).encode("utf8")
-		if server:
-			server.send_data(output)
+		if core:
+			core.send_data(output)
 		else:
 			sys.stdout.write(output)
 
@@ -50,9 +50,9 @@ class CommandWithTarget(CommandBase):
 		target = self.get_target(argc, argv)
 		target.main(argc - 1, argv[1:])
 
-	def server_main(self, server, argc, argv):
+	def core_main(self, core, argc, argv):
 		target = self.get_target(argc, argv)
-		target.server_main(server, argc - 1, argv[1:])
+		target.core_main(core, argc - 1, argv[1:])
 
 	def usage(self):
 		print "Command With Target"

@@ -18,7 +18,7 @@ class Main(CommandGeneral):
 	def __init__(self, general_commands):
 		super(Main, self).__init__()
 		self.notebooks = {}
-		self.server = Server(general_commands)
+		self.core = Core(general_commands)
 		self.auto_exit = False
 
 	def main(self, argc, argv):
@@ -30,15 +30,15 @@ class Main(CommandGeneral):
 			if op in ("--auto-exit"):
 				self.auto_exit = True
 
-		self.server.start(self.auto_exit)
+		self.core.start(self.auto_exit)
 						
 	def usage(self):
-		print "usage: mdnote server"
+		print "usage: mdnote core"
 
 def kill_handler(signal, frame):
-	global server_socket
+	global core_socket
 	debug.message(debug.INFO, "exit because of signal")
-	server_socket.close()
+	core_socket.close()
 	try:
 		debug.message(debug.INFO, "wait children")
 		os.wait()
@@ -49,7 +49,7 @@ def kill_handler(signal, frame):
 def break_handler(signal, frame):
 	pass
 
-class Server(object):
+class Core(object):
 	def __init__(self, general_commands):
 		self.general_commands = general_commands
 		self.threads_lock = threading.Lock()
@@ -62,35 +62,35 @@ class Server(object):
 		return len(self.threads)
 
 	def start(self, auto_exit):
-		debug.message(debug.DEBUG, "starting server")
-		server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		#server.setblocking(False)
-		#server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		debug.message(debug.DEBUG, "starting core")
+		core = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		#core.setblocking(False)
+		#core.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-		server.bind((host, port))
-		server.listen(0)
+		core.bind((host, port))
+		core.listen(0)
 
-		inputs = [server]
+		inputs = [core]
 		outputs = []
 		self.output_buffer = {}
 		timeout = 5
 
 		# need to handler signal
-		global server_socket
-		server_socket = server
+		global core_socket
+		core_socket = core
 		signal.signal(signal.SIGINT, kill_handler)
 		signal.signal(signal.SIGTERM, kill_handler)
 
-		debug.message(debug.DEBUG, "started server, listening")
+		debug.message(debug.DEBUG, "started core, listening")
 		while True:
 			try:
-				connection, client_addr = server.accept()
+				connection, client_addr = core.accept()
 			except socket.error:
 				debug.message(debug.DEBUG, "accept is interrupted")
 			else:
 				debug.message(debug.DEBUG, "new client ", client_addr, " accepted.")
 				self.threads_lock.acquire()
-				thread = ServerThread(self, connection, client_addr, self.general_commands, auto_exit)
+				thread = CoreThread(self, connection, client_addr, self.general_commands, auto_exit)
 				self.threads.append(thread)
 				self.threads_lock.release()
 				thread.start()
@@ -103,7 +103,7 @@ class Server(object):
 				continue
 
 			for fd in readable:
-				if fd is server:
+				if fd is core:
 					connection, client_addr = fd.accept()
 					connection.setblocking(False)
 					inputs.append(connection)
@@ -139,7 +139,7 @@ class Server(object):
 
 open_lock = threading.Lock()
 
-class ServerCommand(object):
+class CoreCommand(object):
 	def __init__(self, general_commands):
 		self.commands = {
 			"open":self.do_open,
@@ -178,7 +178,7 @@ class ServerCommand(object):
 		if self.notespace:
 			self.notespace.close()
 		self.notespace = Notespace()
-		self.general_commands[argv[0]].server_main(thread, argc, argv)
+		self.general_commands[argv[0]].core_main(thread, argc, argv)
 		open_lock.release()
 
 	def do_close(self, thread, argc, argv):
@@ -195,22 +195,22 @@ class ServerCommand(object):
 		try:
 			cmd = self.commands[argv[0]]
 		except KeyError:
-			cmd = self.general_commands[argv[0]].server_main
+			cmd = self.general_commands[argv[0]].core_main
 		return cmd(thread, argc, argv)
 
 	def get_notespace(self):
 		return self.notespace
 
-class ServerThread(threading.Thread):
-	def __init__(self, server, connection, client_addr, general_commands, auto_exit):
-		super(ServerThread, self).__init__()
+class CoreThread(threading.Thread):
+	def __init__(self, core, connection, client_addr, general_commands, auto_exit):
+		super(CoreThread, self).__init__()
 		self.connection = connection
 		self.client_addr = client_addr
 		self.__stopped = True
 		self.output_buffer = []
 		self.auto_exit = auto_exit
-		self.server_commands = ServerCommand(general_commands)
-		self.server = server
+		self.core_commands = CoreCommand(general_commands)
+		self.core = core
 
 	def run(self):
 		try:
@@ -230,17 +230,17 @@ class ServerThread(threading.Thread):
 			traceback.print_exc()
 		finally:
 			debug.message(debug.INFO, "closing connection")
-			self.server_commands.close()
+			self.core_commands.close()
 			self.connection.close()
 			if self.auto_exit:
 				# whether we are the only thread
-				self.server.threads_lock.acquire()
-				thread_count = self.server.check_alive_thread()
+				self.core.threads_lock.acquire()
+				thread_count = self.core.check_alive_thread()
 				debug.message(debug.DEBUG, "thread count is ", thread_count)
 				if thread_count == 1:
 					debug.message(debug.INFO, "terminate self")
 					os.kill(os.getpid(), signal.SIGTERM)
-				self.server.threads_lock.release()
+				self.core.threads_lock.release()
 
 	def stop(self):
 		self.__stopped = True
@@ -251,7 +251,7 @@ class ServerThread(threading.Thread):
 
 		args = self.format_args(data)
 		try:
-			result = self.server_commands.run_command(self, len(args), args)
+			result = self.core_commands.run_command(self, len(args), args)
 			self.send_return_value(result)
 		except errors.UsageError as e:
 			self.send_error(e)
@@ -314,6 +314,6 @@ class ServerThread(threading.Thread):
 		self.output_buffer = []
 
 	def get_notespace(self):
-		return self.server_commands.get_notespace()
+		return self.core_commands.get_notespace()
 
 

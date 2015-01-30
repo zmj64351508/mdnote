@@ -11,9 +11,9 @@ class Main(CommandGeneral):
 		super(Main, self).__init__()
 		self.notebooks = {}
 
-	def get_notespace(self, server):
-		if server:
-			notespace = server.get_notespace()
+	def get_notespace(self, core):
+		if core:
+			notespace = core.get_notespace()
 			debug.message(debug.DEBUG, "notespace path is ", notespace.get_path())
 		else:
 			notespace = Notespace()
@@ -22,10 +22,10 @@ class Main(CommandGeneral):
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		if argc < 1:
 			self.usage()
 			exit()
@@ -35,7 +35,7 @@ class Main(CommandGeneral):
 			path = "."
 
 		# create notespace first if necessary
-		self.notespace = self.get_notespace(server)
+		self.notespace = self.get_notespace(core)
 		if not self.notespace.find_notespace(path, up_to_root = False):
 			debug.message(debug.DEBUG, "No notespace found, creating notespace")
 			self.notespace.create(path)

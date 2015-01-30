@@ -12,9 +12,9 @@ class AddGeneral(object):
 	def __init__(self):
 		pass
 
-	def get_notespace(self, server):
-		if server:
-			notespace = server.get_notespace()
+	def get_notespace(self, core):
+		if core:
+			notespace = core.get_notespace()
 			if not notespace:
 				raise errors.NotFoundError("No notespace found. Maybe you should run open first")
 		else:
@@ -32,13 +32,13 @@ class NoteTarget(CommandGeneral):
 		self.arg_force = False
 		self.target_general = AddGeneral()
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		opts, args = getopt.getopt(argv[1:], "n:t:f", ["notebook=", "tag=", "force"])
 		for op, value in opts:
 			if op in ("-n", "--notebook"):
@@ -58,7 +58,7 @@ class NoteTarget(CommandGeneral):
 
 
 		# find notespace
-		self.notespace = self.target_general.get_notespace(server)
+		self.notespace = self.target_general.get_notespace(core)
 
 		# add note to notebook
 		if self.arg_notebook:

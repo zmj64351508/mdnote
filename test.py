@@ -86,10 +86,10 @@ def run_cmd(command, verbose, *expected_result):
 	else:
 		os.system(command + "> /dev/null")
 
-def run_sub_cmd_noserver(sub_command, verbose, *expected_result):
+def run_sub_cmd_nocore(sub_command, verbose, *expected_result):
 	run_cmd(os.path.join(os.pardir, "mdnote.py ") + sub_command, verbose, *expected_result)
 
-def run_sub_cmd_server(sub_command, verbose, *expected_result):
+def run_sub_cmd_core(sub_command, verbose, *expected_result):
 	global ok_count
 	global fail_count
 	global con
@@ -171,9 +171,9 @@ def create_empty_files(*file_names):
 		f = open(file_name, "w")
 		f.close()
 
-def init_notespace(is_server):
+def init_notespace(is_core):
 	global con
-	if is_server:
+	if is_core:
 		try:
 			con.close()
 		except Exception:
@@ -186,7 +186,7 @@ def init_notespace(is_server):
 	os.makedirs(test_dir)
 	os.chdir(test_dir)
 
-	if is_server:
+	if is_core:
 		con = socket.socket()
 		con.connect(("localhost", 46000))
 	run_sub_cmd("init " + os.getcwd(), True)
@@ -204,20 +204,20 @@ def result_list_detail(*results):
 		actual_result.append(" ")
 	return actual_result
 
-def run_test_case(is_server):
+def run_test_case(is_core):
 	global ok_count
 	global fail_count
 	global run_sub_cmd
-	if is_server:
-		run_sub_cmd = run_sub_cmd_server
-		#run_sub_cmd("server", False)
+	if is_core:
+		run_sub_cmd = run_sub_cmd_core
+		#run_sub_cmd("core", False)
 		global con
 		con = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 	else:
-		run_sub_cmd = run_sub_cmd_noserver
+		run_sub_cmd = run_sub_cmd_nocore
 
 	if "add note -n" in targets:
-		init_notespace(is_server)
+		init_notespace(is_core)
 
 		create_empty_files("note_exist_1", "note_exist_2", "note_exist_3")
 		create_empty_files("note_new_1", "note_new_2", "note_new_3")
@@ -310,7 +310,7 @@ def run_test_case(is_server):
 		))
 
 	if "add note -t" in targets:
-		init_notespace(is_server)
+		init_notespace(is_core)
 		create_empty_files("note1", "note2", "note3", "note4")
 
 		run_sub_cmd("add note -t tag1 note1 note2", True)
@@ -349,7 +349,7 @@ def run_test_case(is_server):
 		)
 	
 	if "list note" in targets:
-		init_notespace(is_server)
+		init_notespace(is_core)
 		os.mkdir("sub_dir")
 		create_empty_files("note1", "note2", "note3", "note4", "except_note", "sub_dir/sub1", "sub_dir/sub2")
 		run_sub_cmd('add note -n notebook1 note1 note2 except_note', True)
@@ -387,7 +387,7 @@ def run_test_case(is_server):
 		)
 
 	if "rm note" in targets:
-		init_notespace(is_server)
+		init_notespace(is_core)
 		create_empty_files("note1", "note2", "note3", "note4", "another")
 
 		run_sub_cmd('add note -t tag1 note1 note2', True)
@@ -413,7 +413,7 @@ def run_test_case(is_server):
 		"")
 	
 	if "general" in targets:
-		init_notespace(is_server)
+		init_notespace(is_core)
 		# common test
 		os.makedirs("sub_dir")
 

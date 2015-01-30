@@ -13,9 +13,9 @@ class ListGeneral(object):
 	def __init__(self):
 		pass
 
-	def get_notespace(self, server):
-		if server:
-			notespace = server.get_notespace()
+	def get_notespace(self, core):
+		if core:
+			notespace = core.get_notespace()
 			if not notespace:
 				raise errors.NotFoundError("No notespace found. Maybe you should run open first")
 		else:
@@ -34,13 +34,13 @@ class NoteTarget(CommandGeneral):
 		self.arg_detail = False
 		self.target_general = ListGeneral()
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -61,7 +61,7 @@ class NoteTarget(CommandGeneral):
 		debug.message(debug.DEBUG, "\ttags    : ", self.arg_tags)
 		debug.message(debug.DEBUG, "\tstring  : ", self.arg_string)
 
-		self.notespace = self.target_general.get_notespace(server)
+		self.notespace = self.target_general.get_notespace(core)
 
 		notebook = None
 		if self.arg_notebook:
@@ -75,7 +75,7 @@ class NoteTarget(CommandGeneral):
 		note_names = self.notespace.norm_note_path(self.arg_string)
 		
 		result = self.list_filter(notebook, tags, note_names)
-		self.print_result(server, result, self.arg_detail)
+		self.print_result(core, result, self.arg_detail)
 
 	def find_notes(self, nb_names, n_names):
 		pass
@@ -122,29 +122,29 @@ class NoteTarget(CommandGeneral):
 		else:
 			return notes_detail
 
-	def print_result(self, server, result, print_detail):
+	def print_result(self, core, result, print_detail):
 		if not result:
 			return
 
 		if print_detail:
 			for detail in result:
-				self.output_result(server, "PATH: ", detail["path"], "\n")
-				self.output_result(server, "NOTEBOOK: ", detail["notebook"], "\n")
-				self.output_result(server, "TAG: ")
+				self.output_result(core, "PATH: ", detail["path"], "\n")
+				self.output_result(core, "NOTEBOOK: ", detail["notebook"], "\n")
+				self.output_result(core, "TAG: ")
 				for tag in detail["tag"]:
 					if tag:
-						self.output_result(server, tag,";")
-				self.output_result(server, "\n")
-				if server:
-					self.output_result(server, "CREATE TIME: ", detail["create_time"], "\n")
-					self.output_result(server, "MODIFY TIME: ", detail["modify_time"], "\n")
+						self.output_result(core, tag,";")
+				self.output_result(core, "\n")
+				if core:
+					self.output_result(core, "CREATE TIME: ", detail["create_time"], "\n")
+					self.output_result(core, "MODIFY TIME: ", detail["modify_time"], "\n")
 				else:
-					self.output_result(server, "CREATE TIME: ", time.ctime(detail["create_time"]), "\n")
-					self.output_result(server, "MODIFY TIME: ", time.ctime(detail["modify_time"]), "\n")
-				self.output_result(server, " \n")
+					self.output_result(core, "CREATE TIME: ", time.ctime(detail["create_time"]), "\n")
+					self.output_result(core, "MODIFY TIME: ", time.ctime(detail["modify_time"]), "\n")
+				self.output_result(core, " \n")
 		else:
 			for detail in result:
-				self.output_result(server, detail["path"], "\n")
+				self.output_result(core, detail["path"], "\n")
 
 	def usage(self):
 		print "usage: mdnote list"
@@ -158,13 +158,13 @@ class NotebookTarget(CommandGeneral):
 		self.arg_detail = False
 		self.target_general = ListGeneral()
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -175,11 +175,11 @@ class NotebookTarget(CommandGeneral):
 				self.arg_detail = True
 
 		# find notespace
-		self.notespace = self.target_general.get_notespace(server)
+		self.notespace = self.target_general.get_notespace(core)
 
 		notebooks = self.notespace.get_all_notebooks()
 		for notebook in notebooks:
-			self.output_result(server, notebook + "\n")
+			self.output_result(core, notebook + "\n")
 	
 	def usage(self):
 		print "usage: mdnote list notebook"
@@ -190,13 +190,13 @@ class TagTarget(CommandGeneral):
 		self.arg_detail = False
 		self.target_general = ListGeneral()
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -207,11 +207,11 @@ class TagTarget(CommandGeneral):
 				self.arg_detail = True
 
 		# find notespace
-		self.notespace = self.target_general.get_notespace(server)
+		self.notespace = self.target_general.get_notespace(core)
 
 		tags = self.notespace.get_all_tags()
 		for tag in tags:
-			self.output_result(server, tag + "\n")
+			self.output_result(core, tag + "\n")
 	
 	def usage(self):
 		print "usage: mdnote list notebook"

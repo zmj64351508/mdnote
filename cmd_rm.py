@@ -13,9 +13,9 @@ class RmGeneral(object):
 	def __init__(self):
 		pass
 
-	def get_notespace(self, server):
-		if server:
-			notespace = server.get_notespace()
+	def get_notespace(self, core):
+		if core:
+			notespace = core.get_notespace()
 			if not notespace:
 				raise errors.NotFoundError("No notespace found. Maybe you should run open first")
 		else:
@@ -31,13 +31,13 @@ class NoteTarget(CommandGeneral):
 		self.arg_purge = False
 		self.target_general = RmGeneral()
 
-	def server_main(self, server, argc, argv):
-		self.do_main(server, argc, argv)
+	def core_main(self, core, argc, argv):
+		self.do_main(core, argc, argv)
 	
 	def main(self, argc, argv):
 		self.do_main(None, argc, argv)
 
-	def do_main(self, server, argc, argv):
+	def do_main(self, core, argc, argv):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
@@ -47,7 +47,7 @@ class NoteTarget(CommandGeneral):
 			if op in ("--purge"):
 				self.arg_purge = True
 
-		self.notespace = self.target_general.get_notespace(server)
+		self.notespace = self.target_general.get_notespace(core)
 		notes_path = self.notespace.norm_note_path(args)
 		debug.message(debug.DEBUG, "notes path are ", notes_path)
 		self.notespace.remove_notes_by_path(notes_path, self.arg_purge, True)
