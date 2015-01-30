@@ -523,7 +523,7 @@ class Notespace(object):
 		if purge:
 			for detail in details:
 				try:
-					path = os.path.join(self.path, detail["path"].decode("utf8").encode(sys.getfilesystemencoding()))
+					path = os.path.join(self.path, detail["path"].encode(sys.getfilesystemencoding()))
 					os.remove(path)
 				except IOError:
 					traceback.print_exc()
