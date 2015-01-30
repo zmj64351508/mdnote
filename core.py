@@ -178,10 +178,12 @@ class CoreCommand(object):
 		if self.notespace:
 			self.notespace.close()
 		self.notespace = Notespace()
-		self.general_commands[argv[0]].core_main(thread, argc, argv)
+		result = self.general_commands[argv[0]].core_main(thread, argc, argv)
 		open_lock.release()
+		return result
 
 	def do_close(self, thread, argc, argv):
+		debug.message(debug.DEBUG, "do_close")
 		thread.stop()
 		return 0
 
@@ -219,8 +221,10 @@ class CoreThread(threading.Thread):
 				try:
 					data = self.connection.recv(1024)
 				except socket.error:
+					traceback.print_exc()
 					break
 				if not data:
+					debug.message(debug.INFO, "no data")
 					break
 				cmds = data.strip().split("\n")
 				for cmd in cmds:
@@ -252,6 +256,7 @@ class CoreThread(threading.Thread):
 		args = self.format_args(data)
 		try:
 			result = self.core_commands.run_command(self, len(args), args)
+			assert(result != None)
 			self.send_return_value(result)
 		except errors.UsageError as e:
 			self.send_error(e)
