@@ -72,9 +72,9 @@ class NoteTarget(CommandGeneral):
 			tags = self.find_tags(self.arg_tags)
 
 		# normalize note name specified
-		note_names = self.notespace.norm_note_path(self.arg_string)
+		notes_path = self.notespace.norm_note_path(self.arg_string)
 		
-		result = self.list_filter(notebook, tags, note_names)
+		result = self.list_filter(notebook, tags, notes_path)
 		self.print_result(core, result, self.arg_detail)
 		return 0
 
@@ -105,19 +105,19 @@ class NoteTarget(CommandGeneral):
 				raise errors.NoSuchRecord()
 		return tags
 
-	def list_filter(self, notebook, tags, note_names):
+	def list_filter(self, notebook, tags, notes_path):
 		if tags or notebook:
 			notes_detail = self.notespace.filter_note_detail(notebook, tags)
 		else:
 			notes_detail = self.notespace.get_all_notes_detail()
 
 		# Filter by note names specified as the last step.
-		# We don't want to output any note that is not presented in note_names except note_names is None
+		# We don't want to output any note that is not presented in notes_path except notes_path is None
 		result = []
-		if note_names:
-			debug.message(debug.DEBUG, "filter for note name: ", note_names)
+		if notes_path:
+			debug.message(debug.DEBUG, "filter for note name: ", notes_path)
 			for note_detail in notes_detail:
-				if note_detail["path"].encode("utf8") in note_names:
+				if note_detail["path"].encode("utf8") in notes_path:
 					result.append(note_detail)
 			return result
 		else:

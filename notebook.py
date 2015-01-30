@@ -330,6 +330,7 @@ class Database(object):
 			name.append(row[1])
 		return name
 
+	# notes_path utf8 encoding
 	def remove_notes_by_path(self, notes_path, sync):
 		cursor = self.get_notes_by_path(notes_path)
 		result = self.get_notes_detail_by_cursor(cursor)
@@ -443,6 +444,7 @@ class Notespace(object):
 		self.meta_path = meta_path
 		return notespace_path
 
+	# normalize note path from ansii to utf8 which used in database and all the other needed to normalize
 	def norm_note_path(self, to_norm):
 		note_paths = []
 		if to_norm:
@@ -520,13 +522,14 @@ class Notespace(object):
 		if not notes_path:
 			return -1
 		if purge:
-			for path in notes_path:
+			for i, path in enumerate(notes_path):
 				try:
-					path = os.path.join(self.path, path)
+					path = os.path.join(self.path, path.decode("utf8").encode(sys.getfilesystemencoding()))
 					os.remove(path)
 				except Exception:
 					traceback.print_exc()
 					return -1
+			print notes_path
 		details = self.get_database().remove_notes_by_path(notes_path, sync)
 		return 0
 
