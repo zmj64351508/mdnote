@@ -44,10 +44,10 @@ class NoteTarget(CommandGeneral):
 		if argc < 1:
 			self.usage()
 			raise errors.UsageError()
-		opts, args = getopt.getopt(argv[1:], "n:t:d", 
+		opts, args = getopt.getopt(argv[1:], "b:t:d", 
 				["notebook=", "tag=", "detail"])
 		for op, value in opts:
-			if op in ("-n", "--notebook"):
+			if op in ("-b", "--notebook"):
 				self.arg_notebook = value
 			elif op in ("-t", "--tag"):
 				self.arg_tags = arguments.get_multi_arg(value)

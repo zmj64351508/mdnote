@@ -149,7 +149,7 @@ start_dir = os.getcwd()
 test_dir = "test_dir"
 con = None
 targets = [
-	"add note -n",
+	"add note -b",
 	"add note -t",
 	"rm note",
 	"list note",
@@ -216,23 +216,23 @@ def run_test_case(is_core):
 	else:
 		run_sub_cmd = run_sub_cmd_nocore
 
-	if "add note -n" in targets:
+	if "add note -b" in targets:
 		init_notespace(is_core)
 
 		create_empty_files("note_exist_1", "note_exist_2", "note_exist_3")
 		create_empty_files("note_new_1", "note_new_2", "note_new_3")
-		# add -n without -f, all notes are not in notespace
-		run_sub_cmd("add note -n notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
+		# add -b without -f, all notes are not in notespace
+		run_sub_cmd("add note -b notebook_exist note_exist_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
 			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
 			{"path":"note_exist_3", "notebook":"notebook_exist", "tag":""},
 		))
 
-		# add -n without -f
+		# add -b without -f
 		# 1. all notes are in notespace
 		# 2. new notebook specified
-		run_sub_cmd("add note -n notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
+		run_sub_cmd("add note -b notebook_not_exist note_exist_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
 			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
@@ -243,10 +243,10 @@ def run_test_case(is_core):
 		"notebook_exist",
 		)
 
-		# add -n without -f
+		# add -b without -f
 		# 1. just 1 note are not in notespace, but didn't exist in directory
 		# 2. new notebook specified
-		run_sub_cmd("add note -n notebook_not_exist not_exist note_exist_2 note_exist_3", True)
+		run_sub_cmd("add note -b notebook_not_exist not_exist note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
 			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
@@ -257,10 +257,10 @@ def run_test_case(is_core):
 		"notebook_exist",
 		)
 
-		# add -n without -f
+		# add -b without -f
 		# 1. just 1 note are not in notespace
 		# 2. new notebook specified
-		run_sub_cmd("add note -n new_notebook note_new_1 note_exist_2 note_exist_3", True)
+		run_sub_cmd("add note -b new_notebook note_new_1 note_exist_2 note_exist_3", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"notebook_exist", "tag":""},
 			{"path":"note_exist_2", "notebook":"notebook_exist", "tag":""},
@@ -273,9 +273,9 @@ def run_test_case(is_core):
 		"new_notebook",
 		)
 
-		# add -n -f
+		# add -b -f
 		# 1. just 1 note are not in notespace
-		run_sub_cmd("add note -f -n new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
+		run_sub_cmd("add note -f -b new_notebook note_exist_1 note_exist_2 note_exist_3 note_new_2", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"new_notebook", "tag":""},
 			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
@@ -284,10 +284,10 @@ def run_test_case(is_core):
 			{"path":"note_new_2",   "notebook":"new_notebook", "tag":""},
 		))
 
-		# add -n -f
+		# add -b -f
 		# 1. just 1 note are not in notespace, but not exist
 		# 2. new notebook specified
-		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 not_exist", True)
+		run_sub_cmd("add note -f -b new_notebook_2 note_exist_1 not_exist", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"new_notebook_2", "tag":""},
 			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
@@ -296,10 +296,10 @@ def run_test_case(is_core):
 			{"path":"note_new_2",   "notebook":"new_notebook", "tag":""},
 		))
 		
-		# add -n -f
+		# add -b -f
 		# 1. just 1 note are not in notespace
 		# 2. new notebook specified
-		run_sub_cmd("add note -f -n new_notebook_2 note_exist_1 note_new_3", True)
+		run_sub_cmd("add note -f -b new_notebook_2 note_exist_1 note_new_3", True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note_exist_1", "notebook":"new_notebook_2", "tag":""},
 			{"path":"note_exist_2", "notebook":"new_notebook", "tag":""},
@@ -352,10 +352,10 @@ def run_test_case(is_core):
 		init_notespace(is_core)
 		os.mkdir("sub_dir")
 		create_empty_files("note1", "note2", "note3", "note4", "except_note", "sub_dir/sub1", "sub_dir/sub2")
-		run_sub_cmd('add note -n notebook1 note1 note2 except_note', True)
+		run_sub_cmd('add note -b notebook1 note1 note2 except_note', True)
 		run_sub_cmd('add note -t tag1 note1 note3', True)
-		run_sub_cmd('add note -n notebook2 -t tag2 note4 sub_dir/sub1', True)
-		run_sub_cmd('add note -n notebook2 -t "tag2;tag3" sub_dir/sub2', True)
+		run_sub_cmd('add note -b notebook2 -t tag2 note4 sub_dir/sub1', True)
+		run_sub_cmd('add note -b notebook2 -t "tag2;tag3" sub_dir/sub2', True)
 		run_sub_cmd("list note -d", True, result_list_detail(
 			{"path":"note1", "notebook":"notebook1", "tag":"tag1;"},
 			{"path":"note2", "notebook":"notebook1", "tag":""},
@@ -365,12 +365,12 @@ def run_test_case(is_core):
 			{"path":os.path.normpath("sub_dir/sub1"), "notebook":"notebook2", "tag":"tag2;"},
 			{"path":os.path.normpath("sub_dir/sub2"), "notebook":"notebook2", "tag":"tag2;tag3;"},
 		))
-		run_sub_cmd("list note -n notebook1", True, 
+		run_sub_cmd("list note -b notebook1", True, 
 			"note1",
 			"note2",
 			"except_note"
 		)
-		run_sub_cmd("list note -n notebook1 note*", True, 
+		run_sub_cmd("list note -b notebook1 note*", True, 
 			"note1",
 			"note2",
 		)
@@ -391,8 +391,8 @@ def run_test_case(is_core):
 		create_empty_files("note1", "note2", "note3", "note4", "another")
 
 		run_sub_cmd('add note -t tag1 note1 note2', True)
-		run_sub_cmd('add note -n notebook1 -t tag3 note3', True)
-		run_sub_cmd('add note -n notebook2 -t tag4 note4 another', True)
+		run_sub_cmd('add note -b notebook1 -t tag3 note3', True)
+		run_sub_cmd('add note -b notebook2 -t tag4 note4 another', True)
 
 		run_sub_cmd('rm note note1 note2', True)
 		run_sub_cmd('list note', True,
@@ -427,7 +427,7 @@ def run_test_case(is_core):
 		run_sub_cmd('init ' + os.getcwd(), True)
 
 		# not specified notes
-		run_sub_cmd('add note -n notebook1', True, 2)
+		run_sub_cmd('add note -b notebook1', True, 2)
 
 		# not existed file
 		run_sub_cmd('add note not_existed', True)
@@ -456,10 +456,10 @@ def run_test_case(is_core):
 		run_sub_cmd('add note -t default2 default_1', True)
 
 		# add notes
-		run_sub_cmd('add note -n notebook_0 notebook_0_0 notebook_0_2 notebook_0_1', True)
-		run_sub_cmd('add note -n notebook_1 notebook_1_1 notebook_1_0 notebook_1_2', True)
-		run_sub_cmd('add note -n notebook_1 -t "default1" notebook_1_1', True)
-		run_sub_cmd('add note -n notebook_1 -t "default1; default2" notebook_1_2', True)
+		run_sub_cmd('add note -b notebook_0 notebook_0_0 notebook_0_2 notebook_0_1', True)
+		run_sub_cmd('add note -b notebook_1 notebook_1_1 notebook_1_0 notebook_1_2', True)
+		run_sub_cmd('add note -b notebook_1 -t "default1" notebook_1_1', True)
+		run_sub_cmd('add note -b notebook_1 -t "default1; default2" notebook_1_2', True)
 
 		run_sub_cmd('list note', True,
 		"default_0",
@@ -490,12 +490,12 @@ def run_test_case(is_core):
 			{"path":"notebook_1_2", "notebook":"notebook_1", "tag":"default1;default2;"},
 		))
 
-		run_sub_cmd('list note -n notebook_1', True,
+		run_sub_cmd('list note -b notebook_1', True,
 		"notebook_1_1",
 		"notebook_1_0",
 		"notebook_1_2",
 		)
-		run_sub_cmd('list note -n "default notebook"', True,
+		run_sub_cmd('list note -b "default notebook"', True,
 		"default_0",
 		"default_1",
 		"default_2",
@@ -513,11 +513,11 @@ def run_test_case(is_core):
 		"default_1",
 		"notebook_1_2",
 		) 
-		run_sub_cmd('list note -d -n notebook_1 -t "default1; default2"', True, result_list_detail(
+		run_sub_cmd('list note -d -b notebook_1 -t "default1; default2"', True, result_list_detail(
 			{"path":"notebook_1_2", "notebook":"notebook_1", "tag":"default1;default2;"},
 		))
 
-		run_sub_cmd('list note -n not_exsit_nb', True, 4)
+		run_sub_cmd('list note -b not_exsit_nb', True, 4)
 
 		run_sub_cmd('list notebook', True,
 		"default notebook",
@@ -538,4 +538,4 @@ if __name__ == "__main__":
 	if has_colorama:
 		colorama.init()
 	run_test_case(False)
-	run_test_case(True)
+	#run_test_case(True)

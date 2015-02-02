@@ -39,9 +39,9 @@ class NoteTarget(CommandGeneral):
 		return self.do_main(None, argc, argv)
 
 	def do_main(self, core, argc, argv):
-		opts, args = getopt.getopt(argv[1:], "n:t:f", ["notebook=", "tag=", "force"])
+		opts, args = getopt.getopt(argv[1:], "b:t:f", ["notebook=", "tag=", "force"])
 		for op, value in opts:
-			if op in ("-n", "--notebook"):
+			if op in ("-b", "--notebook"):
 				self.arg_notebook = value
 				debug.message(debug.DEBUG, "notebook is ", value)
 			elif op in ("-t", "--tag"):
