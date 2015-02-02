@@ -42,8 +42,8 @@ class NoteTarget(CommandGeneral):
 		opts, args = getopt.getopt(argv[1:], "b:t:f", ["notebook=", "tag=", "force"])
 		for op, value in opts:
 			if op in ("-b", "--notebook"):
-				self.arg_notebook = value
-				debug.message(debug.DEBUG, "notebook is ", value)
+				self.arg_notebook = value.decode("utf8")
+				debug.message(debug.DEBUG, "notebook is ", self.arg_notebook)
 			elif op in ("-t", "--tag"):
 				self.arg_tags = arguments.get_multi_arg(value)
 				debug.message(debug.DEBUG, "tag is ", value)
@@ -78,7 +78,8 @@ class NoteTarget(CommandGeneral):
 	
 	# notebook can be class Notebook or notebook path
 	def add_notes_to_notebook(self, notes_path, notebook, force_update):
-		if type(notebook) == str:
+		print type(notebook)
+		if type(notebook) == unicode:
 			nb_name = notebook
 			notebook = self.notespace.find_notebook(nb_name)
 		elif type(notebook) == Notebook:
@@ -145,7 +146,37 @@ class NoteTarget(CommandGeneral):
 					tag.add_note(note, False)
 
 class NotebookTarget(CommandGeneral):
-	pass
+	def __init__(self):
+		super(NotebookTarget, self).__init__()
+		self.target_general = AddGeneral()
+
+	def core_main(self, core, argc, argv):
+		return self.do_main(core, argc, argv)
+	
+	def main(self, argc, argv):
+		return self.do_main(None, argc, argv)
+
+	def do_main(self, core, argc, argv):
+		opts, args = getopt.getopt(argv[1:], "f", ["force"])
+		for op, value in opts:
+			if op in ("-f", "--force"):
+				self.arg_force = True
+				debug.message(debug.DEBUG, "force update")
+
+		self.arg_notebooks = []
+		for arg in args:
+			self.arg_notebooks.append(arg.decode("utf8"))
+
+		debug.message(debug.DEBUG, "notebooks are", self.arg_notebooks)
+		if not self.arg_notebooks:
+			raise errors.UsageError("No notebook specified")
+
+		# find notespace
+		self.notespace = self.target_general.get_notespace(core)
+		for nb_name in self.arg_notebooks:
+			self.notespace.create_notebook(nb_name)
+		#self.notespace.get_database().commit()
+		return 0
 
 class TagTarget(CommandGeneral):
 	pass

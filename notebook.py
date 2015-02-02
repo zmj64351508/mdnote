@@ -173,21 +173,21 @@ class Database(object):
 	# insert a new notebook to notebook table
 	def new_notebook(self, notebook):
 		nb_table = self.get_table("notebook")
-		cu = nb_table.select("id", "WHERE name='"+notebook.get_name()+"'")
+		cu = nb_table.select("id", "WHERE name='"+notebook.get_name_unicode()+"'")
 		try:
 			record = cu.next()
 			debug.message(debug.WARN, "notebook: ", notebook.get_name(), 
 					" already exists, ignoring")
 		except StopIteration:
-			self.get_table("notebook").insert(notebook.get_name())
+			self.get_table("notebook").insert(notebook.get_name_unicode())
 
 	def new_tag(self, tag):
 		tag_table = self.get_table("tag")
-		cu = tag_table.select("id", "WHERE name='"+tag.get_name()+"'")
+		cu = tag_table.select("id", "WHERE name='"+tag.get_name_unicode()+"'")
 		try:
 			record = cu.next()
 		except StopIteration:
-			tag_table.insert(tag.get_name())
+			tag_table.insert(tag.get_name_unicode())
 
 	def get_notes_command(self, where):
 		return self.connect.execute("""
@@ -617,6 +617,9 @@ class NoteContainer(NoteObject):
 
 	def create(self):
 		raise NotImplementedError
+
+	def get_name_unicode(self):
+		return self.name.encode("utf8")
 
 	def get_name(self):
 		return self.name
